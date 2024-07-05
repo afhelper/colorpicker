@@ -8,7 +8,8 @@ import re
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
-url = "https://vod.afreecatv.com/player/128471501"
+# url = "https://vod.afreecatv.com/player/129488725"
+url = "https://vod.afreecatv.com/player/128038555"
 
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
@@ -119,6 +120,7 @@ def fetch_data(row_keys, durations):
         print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
 
 # XML 파일에서 필요한 데이터 추출
+# XML 파일에서 필요한 데이터 추출
 def extract_required_data_from_xml(file_path):
     tree = ET.parse(file_path)
     root = tree.getroot()
@@ -191,7 +193,7 @@ def process_all_xml_files():
         <body>
             <div class="container">
                 <h1>Total Sum of balloon: {total_sum}</h1>
-                <button class="btn btn-primary filter-button" onclick="filterRows()">Show Only Red Rows</button>
+                <button class="btn btn-primary filter-button" onclick="toggleFilter()">Show Only Red Rows</button>
                 <table class="table table-bordered" id="dataTable">
                     <thead class="thead-dark">
                         <tr>
@@ -225,16 +227,26 @@ def process_all_xml_files():
                 </table>
             </div>
             <script>
-                function filterRows() {
+                let isFiltered = false;
+
+                function toggleFilter() {
                     const rows = document.querySelectorAll('#dataTable tbody tr');
+                    isFiltered = !isFiltered;
+
                     rows.forEach(row => {
                         const messageCell = row.cells[2];
-                        if (messageCell.innerHTML.includes('color: red')) {
-                            row.classList.remove('hidden');
+                        if (isFiltered) {
+                            if (messageCell.innerHTML.includes('color: red')) {
+                                row.classList.remove('hidden');
+                            } else {
+                                row.classList.add('hidden');
+                            }
                         } else {
-                            row.classList.add('hidden');
+                            row.classList.remove('hidden');
                         }
                     });
+
+                    document.querySelector('.filter-button').innerText = isFiltered ? 'Show All Rows' : 'Show Only Red Rows';
                 }
             </script>
         </body>
