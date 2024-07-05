@@ -12,6 +12,11 @@ url = "https://vod.afreecatv.com/player/129493479"
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
 storage_file = os.path.join(desktop_path, 'storage_state.json')
+result_folder = os.path.join(desktop_path, 'result')
+
+# 결과 폴더가 존재하지 않으면 생성
+if not os.path.exists(result_folder):
+    os.makedirs(result_folder)
 
 def save_login_state():
     with sync_playwright() as p:
@@ -35,7 +40,7 @@ def save_login_state():
 def extract_data():
     try:
         with sync_playwright() as p:
-            browser = p.firefox.launch(headless=False)  # headless=True로 설정하여 브라우저가 보이지 않게 함
+            browser = p.firefox.launch(headless=True)  # headless=True로 설정하여 브라우저가 보이지 않게 함
             context = browser.new_context(storage_state=storage_file)
             page = context.new_page()
             
@@ -86,6 +91,7 @@ all_data = []
 
 def fetch_data(row_keys, durations):
     try:
+        file_counter = 1  # 파일 카운터 초기화
         for row_key, duration in zip(row_keys, durations):
             iterations = duration // 300
             
@@ -96,39 +102,20 @@ def fetch_data(row_keys, durations):
                 response.raise_for_status()
                 
                 xml_data = response.content
-                dict_data = xmltodict.parse(xml_data)
                 
-                # root 내부의 모든 노드를 확인하고 리스트로 변환하여 저장
-                for key, value in dict_data['root'].items():
-                    if isinstance(value, list):
-                        for item in value:
-                            if isinstance(item, dict):  # item이 dict일 때만 source 추가
-                                item['source'] = key
-                            all_data.append(item)
-                    elif isinstance(value, dict):
-                        value['source'] = key
-                        all_data.append(value)
+                # 파일 이름을 동적으로 설정
+                file_name = f"chat_{file_counter:04}.xml"  # 파일 이름 형식 설정
+                file_counter += 1
+                xml_file_path = os.path.join(result_folder, file_name)
+                
+                # XML 데이터를 파일로 저장
+                with open(xml_file_path, "wb") as xml_file:
+                    xml_file.write(xml_data)
 
-                print(f'{url}\n진행중')
+                print(f'{url}\n진행중: {xml_file_path}')
                 # 다음 요청 전 1초 대기
                 time.sleep(0.7)
 
-        # 전체 데이터를 딕셔너리 형태로 만들기
-        full_data = {'root': all_data}
-
-        # JSON 형식으로 변환
-        json_data = json.dumps(full_data, ensure_ascii=False, indent=4)
-
-        # 파일 이름을 동적으로 설정
-        file_name = "data.txt"
-        json_file_path = os.path.join(desktop_path, file_name)
-
-        # JSON 데이터를 파일로 저장
-        with open(json_file_path, "w", encoding="utf-8") as json_file:
-            json_file.write(json_data)
-
-        print(f"JSON 데이터가 바탕화면에 {json_file_path} 파일로 저장되었습니다.")
-    
     except Exception as e:
         print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
 
