@@ -4,6 +4,7 @@ import requests
 import xmltodict
 from playwright.sync_api import sync_playwright
 import os
+import xml.etree.ElementTree as ET
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
@@ -13,6 +14,7 @@ url = "https://vod.afreecatv.com/player/129493479"
 desktop_path = os.path.expanduser("~/Desktop")
 storage_file = os.path.join(desktop_path, 'storage_state.json')
 result_folder = os.path.join(desktop_path, 'result')
+final_output_file = os.path.join(desktop_path, 'final_result.html')
 
 # 결과 폴더가 존재하지 않으면 생성
 if not os.path.exists(result_folder):
@@ -40,7 +42,7 @@ def save_login_state():
 def extract_data():
     try:
         with sync_playwright() as p:
-            browser = p.firefox.launch(headless=True)  # headless=True로 설정하여 브라우저가 보이지 않게 함
+            browser = p.firefox.launch(headless=False)  # headless=True로 설정하여 브라우저가 보이지 않게 함
             context = browser.new_context(storage_state=storage_file)
             page = context.new_page()
             
@@ -86,9 +88,6 @@ def extract_data():
 # 주어진 URL 템플릿
 url_template = 'https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={row_key}_c&startTime={start_time}'
 
-# 모든 XML 데이터를 담을 리스트
-all_data = []
-
 def fetch_data(row_keys, durations):
     try:
         file_counter = 1  # 파일 카운터 초기화
@@ -119,7 +118,71 @@ def fetch_data(row_keys, durations):
     except Exception as e:
         print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
 
+# XML 파일에서 필요한 데이터 추출
+def extract_required_data_from_xml(file_path):
+    tree = ET.parse(file_path)
+    root = tree.getroot()
+    extracted_data = []
+    
+    for element in root:
+        if element.tag in ['chat', 'balloon', 'adballoon', 'ogq']:
+            nickname = ''
+            user_id = ''
+            message = ''
+            timestamp = ''
+            
+            if element.tag == 'ogq':
+                user_id = element.find('s').text if element.find('s') is not None else ''
+                nickname = element.find('sn').text if element.find('sn') is not None else ''
+                message = element.find('m').text if element.find('m') is not None else ''
+                timestamp = element.find('t').text if element.find('t') is not None else ''
+            elif element.tag in ['balloon', 'adballoon']:
+                nickname = element.find('n').text if element.find('n') is not None else ''
+                user_id = element.find('u').text if element.find('u') is not None else ''
+                message = element.find('c').text if element.find('c') is not None else ''
+                timestamp = element.find('t').text if element.find('t') is not None else ''
+            else:
+                nickname = element.find('n').text if element.find('n') is not None else ''
+                user_id = element.find('u').text if element.find('u') is not None else ''
+                message = element.find('m').text if element.find('m') is not None else ''
+                timestamp = element.find('t').text if element.find('t') is not None else ''
+            
+            extracted_data.append({
+                'tag': element.tag,
+                'nickname': nickname,
+                'user_id': user_id,
+                'message': message,
+                'timestamp': timestamp
+            })
+    
+    return extracted_data
 
+# 모든 XML 파일 처리 및 결과 저장
+def process_all_xml_files():
+    all_extracted_data = []
+
+    # result 폴더의 모든 XML 파일 처리
+    for filename in sorted(os.listdir(result_folder)):
+        if filename.endswith('.xml'):
+            file_path = os.path.join(result_folder, filename)
+            extracted_data = extract_required_data_from_xml(file_path)
+            all_extracted_data.extend(extracted_data)
+    
+    # HTML 파일 생성 및 저장
+    with open(final_output_file, 'w', encoding='utf-8') as output_file:
+        output_file.write("<html><head><title>Extracted Data</title></head><body>")
+        output_file.write("<h1>Extracted Data</h1>")
+        output_file.write("<table border='1'>")
+        output_file.write("<tr><th>Nickname</th><th>User ID</th><th>Message</th><th>Timestamp</th></tr>")
+        for data in all_extracted_data:
+            if data['tag'] in ['balloon', 'adballoon']:
+                output_file.write(f"<tr><td>{data['nickname']}</td><td>{data['user_id']}</td><td><span style='color: red;'>{data['message']}</span></td><td>{data['timestamp']}</td></tr>")
+            else:
+                output_file.write(f"<tr><td>{data['nickname']}</td><td>{data['user_id']}</td><td>{data['message']}</td><td>{data['timestamp']}</td></tr>")
+        output_file.write("</table>")
+        output_file.write("</body></html>")
+
+    print(f"최종 결과가 {final_output_file} 파일로 저장되었습니다.")
 
 # 로그인 상태가 저장되어 있는지 확인하고 없으면 저장하도록 유도
 if not os.path.exists(storage_file):
@@ -127,3 +190,6 @@ if not os.path.exists(storage_file):
 
 # 데이터 추출
 extract_data()
+
+# 모든 XML 파일에서 필요한 정보 추출 및 저장
+process_all_xml_files()
