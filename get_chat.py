@@ -10,6 +10,7 @@ import re
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
 # url = "https://vod.afreecatv.com/player/129488725"
 url = "https://vod.afreecatv.com/player/128038555"
+# url = "https://vod.afreecatv.com/player/129493827"
 
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
@@ -179,6 +180,7 @@ def process_all_xml_files():
             all_extracted_data.extend(extracted_data)
     
     # HTML 파일 생성 및 저장
+# HTML 파일 생성 및 저장
     with open(final_output_file, 'w', encoding='utf-8') as output_file:
         output_file.write(f"""
         <html>
@@ -194,6 +196,7 @@ def process_all_xml_files():
             <div class="container">
                 <h1>Total Sum of balloon: {total_sum}</h1>
                 <button class="btn btn-primary filter-button" onclick="toggleFilter()">Show Only Red Rows</button>
+                <button class="btn btn-secondary filter-button" onclick="toggleHighValueFilter()">Show Only Red Rows with Value >= 100</button>
                 <table class="table table-bordered" id="dataTable">
                     <thead class="thead-dark">
                         <tr>
@@ -228,6 +231,7 @@ def process_all_xml_files():
             </div>
             <script>
                 let isFiltered = false;
+                let isHighValueFiltered = false;
 
                 function toggleFilter() {
                     const rows = document.querySelectorAll('#dataTable tbody tr');
@@ -248,12 +252,34 @@ def process_all_xml_files():
 
                     document.querySelector('.filter-button').innerText = isFiltered ? 'Show All Rows' : 'Show Only Red Rows';
                 }
+
+                function toggleHighValueFilter() {
+                    const rows = document.querySelectorAll('#dataTable tbody tr');
+                    isHighValueFiltered = !isHighValueFiltered;
+
+                    rows.forEach(row => {
+                        const messageCell = row.cells[2];
+                        if (isHighValueFiltered) {
+                            const numberMatch = messageCell.innerHTML.match(/>(\\d+)</);
+                            if (messageCell.innerHTML.includes('color: red') && numberMatch && parseInt(numberMatch[1]) >= 100) {
+                                row.classList.remove('hidden');
+                            } else {
+                                row.classList.add('hidden');
+                            }
+                        } else {
+                            row.classList.remove('hidden');
+                        }
+                    });
+
+                    document.querySelectorAll('.filter-button')[1].innerText = isHighValueFiltered ? 'Show All Rows' : 'Show Only Red Rows with Value >= 100';
+                }
             </script>
         </body>
         </html>
         """)
 
     print(f"최종 결과가 {final_output_file} 파일로 저장되었습니다.")
+
 
 # 로그인 상태가 저장되어 있는지 확인하고 없으면 저장하도록 유도
 if not os.path.exists(storage_file):
