@@ -7,7 +7,6 @@ import os
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
-# url = 'https://vod.afreecatv.com/player/129488725'  # 목표 페이지 URL로 변경하세요
 url = "https://vod.afreecatv.com/player/129493479"
 
 # 파일 경로 설정
@@ -74,8 +73,8 @@ def extract_data():
             print(durations)
             fetch_data(row_keys, durations)
             browser.close()
-    except TypeError:
-        print("TypeError가 발생했습니다. 로그인이 필요합니다.")
+    except Exception as e:
+        print(f"에러가 발생했습니다: {e}")
         save_login_state()
         extract_data()
 
@@ -85,46 +84,55 @@ url_template = 'https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={row
 # 모든 XML 데이터를 담을 리스트
 all_data = []
 
-# 각 rowKey와 duration에 대해 데이터를 수집
 def fetch_data(row_keys, durations):
-    for row_key, duration in zip(row_keys, durations):
-        iterations = duration // 300
-        
-        # startTime을 0부터 300씩 증가시키며 (iterations * 300)까지만 순회
-        for start_time in range(0, (iterations + 1) * 300, 300):
-            url = url_template.format(row_key=row_key, start_time=start_time)
-            response = requests.get(url)
-            response.raise_for_status()
+    try:
+        for row_key, duration in zip(row_keys, durations):
+            iterations = duration // 300
             
-            xml_data = response.content
-            dict_data = xmltodict.parse(xml_data)
-            
-            # root 내부의 모든 노드를 확인하고 리스트로 변환하여 저장
-            for key, value in dict_data['root'].items():
-                if isinstance(value, list):
-                    all_data.extend(value)
-                elif value:
-                    all_data.append(value)
+            # startTime을 0부터 300씩 증가시키며 (iterations * 300)까지만 순회
+            for start_time in range(0, (iterations + 1) * 300, 300):
+                url = url_template.format(row_key=row_key, start_time=start_time)
+                response = requests.get(url)
+                response.raise_for_status()
+                
+                xml_data = response.content
+                dict_data = xmltodict.parse(xml_data)
+                
+                # root 내부의 모든 노드를 확인하고 리스트로 변환하여 저장
+                for key, value in dict_data['root'].items():
+                    if isinstance(value, list):
+                        for item in value:
+                            if isinstance(item, dict):  # item이 dict일 때만 source 추가
+                                item['source'] = key
+                            all_data.append(item)
+                    elif isinstance(value, dict):
+                        value['source'] = key
+                        all_data.append(value)
 
-            print(f'{url}\n진행중')
-            # 다음 요청 전 1초 대기
-            time.sleep(0.7)
+                print(f'{url}\n진행중')
+                # 다음 요청 전 1초 대기
+                time.sleep(0.7)
 
-    # 전체 데이터를 딕셔너리 형태로 만들기
-    full_data = {'root': all_data}
+        # 전체 데이터를 딕셔너리 형태로 만들기
+        full_data = {'root': all_data}
 
-    # JSON 형식으로 변환
-    json_data = json.dumps(full_data, ensure_ascii=False, indent=4)
+        # JSON 형식으로 변환
+        json_data = json.dumps(full_data, ensure_ascii=False, indent=4)
 
-    # 파일 이름을 동적으로 설정
-    file_name = "data.txt"
-    json_file_path = os.path.join(desktop_path, file_name)
+        # 파일 이름을 동적으로 설정
+        file_name = "data.txt"
+        json_file_path = os.path.join(desktop_path, file_name)
 
-    # JSON 데이터를 파일로 저장
-    with open(json_file_path, "w", encoding="utf-8") as json_file:
-        json_file.write(json_data)
+        # JSON 데이터를 파일로 저장
+        with open(json_file_path, "w", encoding="utf-8") as json_file:
+            json_file.write(json_data)
 
-    print(f"JSON 데이터가 바탕화면에 {json_file_path} 파일로 저장되었습니다.")
+        print(f"JSON 데이터가 바탕화면에 {json_file_path} 파일로 저장되었습니다.")
+    
+    except Exception as e:
+        print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
+
+
 
 # 로그인 상태가 저장되어 있는지 확인하고 없으면 저장하도록 유도
 if not os.path.exists(storage_file):
