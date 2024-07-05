@@ -5,6 +5,7 @@ import xmltodict
 from playwright.sync_api import sync_playwright
 import os
 import xml.etree.ElementTree as ET
+import re
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
@@ -160,25 +161,28 @@ def extract_required_data_from_xml(file_path):
 # 모든 XML 파일 처리 및 결과 저장
 def process_all_xml_files():
     all_extracted_data = []
+    total_sum = 0
 
     # result 폴더의 모든 XML 파일 처리
     for filename in sorted(os.listdir(result_folder)):
         if filename.endswith('.xml'):
             file_path = os.path.join(result_folder, filename)
             extracted_data = extract_required_data_from_xml(file_path)
+            for data in extracted_data:
+                if data['tag'] in ['balloon', 'adballoon']:
+                    numbers = re.findall(r'\d+', data['message'])
+                    data['message'] = re.sub(r'(\d+)', r'<span style="color: red;">\1</span>', data['message'])
+                    total_sum += sum(map(int, numbers))
             all_extracted_data.extend(extracted_data)
     
     # HTML 파일 생성 및 저장
     with open(final_output_file, 'w', encoding='utf-8') as output_file:
         output_file.write("<html><head><title>Extracted Data</title></head><body>")
-        output_file.write("<h1>Extracted Data</h1>")
+        output_file.write(f"<h1>Total Sum of balloon: {total_sum}</h1>")
         output_file.write("<table border='1'>")
         output_file.write("<tr><th>Nickname</th><th>User ID</th><th>Message</th><th>Timestamp</th></tr>")
         for data in all_extracted_data:
-            if data['tag'] in ['balloon', 'adballoon']:
-                output_file.write(f"<tr><td>{data['nickname']}</td><td>{data['user_id']}</td><td><span style='color: red;'>{data['message']}</span></td><td>{data['timestamp']}</td></tr>")
-            else:
-                output_file.write(f"<tr><td>{data['nickname']}</td><td>{data['user_id']}</td><td>{data['message']}</td><td>{data['timestamp']}</td></tr>")
+            output_file.write(f"<tr><td>{data['nickname']}</td><td>{data['user_id']}</td><td>{data['message']}</td><td>{data['timestamp']}</td></tr>")
         output_file.write("</table>")
         output_file.write("</body></html>")
 
