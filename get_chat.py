@@ -1,7 +1,6 @@
 import json
 import time
 import requests
-import xmltodict
 from playwright.sync_api import sync_playwright
 import os
 import xml.etree.ElementTree as ET
@@ -9,7 +8,7 @@ import re
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
-url = "https://vod.afreecatv.com/player/129493479"
+url = "https://vod.afreecatv.com/player/128471501"
 
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
@@ -124,6 +123,7 @@ def extract_required_data_from_xml(file_path):
     tree = ET.parse(file_path)
     root = tree.getroot()
     extracted_data = []
+    total_sum = 0
     
     for element in root:
         if element.tag in ['chat', 'balloon', 'adballoon', 'ogq']:
@@ -142,6 +142,11 @@ def extract_required_data_from_xml(file_path):
                 user_id = element.find('u').text if element.find('u') is not None else ''
                 message = element.find('c').text if element.find('c') is not None else ''
                 timestamp = element.find('t').text if element.find('t') is not None else ''
+                
+                # c 필드의 값을 숫자로 변환하여 합산
+                if message and message.isdigit():
+                    total_sum += int(message)
+                message = f'<span style="color: red;">{message}</span>'
             else:
                 nickname = element.find('n').text if element.find('n') is not None else ''
                 user_id = element.find('u').text if element.find('u') is not None else ''
@@ -156,7 +161,7 @@ def extract_required_data_from_xml(file_path):
                 'timestamp': timestamp
             })
     
-    return extracted_data
+    return extracted_data, total_sum
 
 # 모든 XML 파일 처리 및 결과 저장
 def process_all_xml_files():
@@ -167,24 +172,74 @@ def process_all_xml_files():
     for filename in sorted(os.listdir(result_folder)):
         if filename.endswith('.xml'):
             file_path = os.path.join(result_folder, filename)
-            extracted_data = extract_required_data_from_xml(file_path)
-            for data in extracted_data:
-                if data['tag'] in ['balloon', 'adballoon']:
-                    numbers = re.findall(r'\d+', data['message'])
-                    data['message'] = re.sub(r'(\d+)', r'<span style="color: red;">\1</span>', data['message'])
-                    total_sum += sum(map(int, numbers))
+            extracted_data, file_sum = extract_required_data_from_xml(file_path)
+            total_sum += file_sum
             all_extracted_data.extend(extracted_data)
     
     # HTML 파일 생성 및 저장
     with open(final_output_file, 'w', encoding='utf-8') as output_file:
-        output_file.write("<html><head><title>Extracted Data</title></head><body>")
-        output_file.write(f"<h1>Total Sum of balloon: {total_sum}</h1>")
-        output_file.write("<table border='1'>")
-        output_file.write("<tr><th>Nickname</th><th>User ID</th><th>Message</th><th>Timestamp</th></tr>")
+        output_file.write(f"""
+        <html>
+        <head>
+            <title>Extracted Data</title>
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+            <style>
+                .hidden {{ display: none; }}
+                .filter-button {{ margin-bottom: 10px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Total Sum of balloon: {total_sum}</h1>
+                <button class="btn btn-primary filter-button" onclick="filterRows()">Show Only Red Rows</button>
+                <table class="table table-bordered" id="dataTable">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Nickname</th>
+                            <th>User ID</th>
+                            <th>Message</th>
+                            <th>Accumulated</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """)
+        accumulated_sum = 0
         for data in all_extracted_data:
-            output_file.write(f"<tr><td>{data['nickname']}</td><td>{data['user_id']}</td><td>{data['message']}</td><td>{data['timestamp']}</td></tr>")
-        output_file.write("</table>")
-        output_file.write("</body></html>")
+            message = data['message']
+            if message and 'color: red' in message:
+                number_match = re.search(r'>(\d+)<', message)
+                if number_match:
+                    accumulated_sum += int(number_match.group(1))
+            output_file.write(f"""
+                        <tr>
+                            <td>{data['nickname']}</td>
+                            <td>{data['user_id']}</td>
+                            <td>{data['message']}</td>
+                            <td>{accumulated_sum}</td>
+                            <td>{data['timestamp']}</td>
+                        </tr>
+            """)
+        output_file.write("""
+                    </tbody>
+                </table>
+            </div>
+            <script>
+                function filterRows() {
+                    const rows = document.querySelectorAll('#dataTable tbody tr');
+                    rows.forEach(row => {
+                        const messageCell = row.cells[2];
+                        if (messageCell.innerHTML.includes('color: red')) {
+                            row.classList.remove('hidden');
+                        } else {
+                            row.classList.add('hidden');
+                        }
+                    });
+                }
+            </script>
+        </body>
+        </html>
+        """)
 
     print(f"최종 결과가 {final_output_file} 파일로 저장되었습니다.")
 
