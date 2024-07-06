@@ -12,12 +12,13 @@ url = input("url 주소 입력: ")
 
 # 전역 변수 선언
 all_timestamp = []
-
+broadcast_title = ''
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
 storage_file = os.path.join(desktop_path, 'code', 'getaf', 'storage_state.json')
 result_folder = os.path.join(desktop_path, 'result')
-final_output_file = os.path.join(desktop_path, 'final_result.html')
+# final_output_file = os.path.join(desktop_path, 'final_result.html')
+# final_output_file = desktop_path
 
 # 결과 폴더가 존재하지 않으면 생성
 if not os.path.exists(result_folder):
@@ -28,7 +29,7 @@ def format_timestamp(seconds):
     hours = seconds // 3600
     minutes = (seconds % 3600) // 60
     seconds = seconds % 60
-    return f"{hours:02}:{minutes:02}:{seconds:02}"
+    return f"{round(hours):02}:{round(minutes):02}:{round(seconds):02}"
 
 def save_login_state():
     with sync_playwright() as p:
@@ -50,6 +51,7 @@ def save_login_state():
 
 # 로그인 상태를 유지하며 데이터 추출
 def extract_data():
+    global broadcast_title
     try:
         with sync_playwright() as p:
             browser = p.firefox.launch(headless=True)  # headless=True로 설정하여 브라우저가 보이지 않게 함
@@ -59,6 +61,15 @@ def extract_data():
             # 목표 페이지로 이동
             page.goto(url)
             time.sleep(2)
+
+            # broadcast_title 클래스의 title 속성 값 가져오기
+            title_selector = ".broadcast_title"
+            title_element = page.query_selector(title_selector)
+            if title_element:
+                broadcast_title = title_element.get_attribute("title")
+                print(f"Broadcast Title: {broadcast_title}")
+            else:
+                print("Broadcast title element not found.")
 
             # JavaScript 실행하여 vodCore 객체 추출
             script = """
@@ -203,18 +214,18 @@ def process_all_xml_files():
         current_value = float(b[i])
         
         if i == 0:
-            c.append(int(current_value))
+            c.append(float(current_value))
         else:
             if current_value < float(b[i - 1]):
                 prev_value = c[-1]
-            c.append(int(prev_value + current_value))
+            c.append(float(prev_value + current_value))
 
     # HTML 파일 생성 및 저장
-    with open(final_output_file, 'w', encoding='utf-8') as output_file:
+    with open(os.path.join(desktop_path, 'result', f'{broadcast_title}.html'), 'w', encoding='utf-8') as output_file:
         output_file.write(f"""
         <html>
         <head>
-            <title>Extracted Data</title>
+            <title>{broadcast_title}</title>
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
             <style>
                 .hidden {{ display: none; }}
@@ -224,6 +235,7 @@ def process_all_xml_files():
         </head>
         <body>
             <div class="container">
+                <h1>{broadcast_title}</h1>
                 <h1>Total Sum of balloon: {total_sum}</h1>
                 <div class="checkbox-container">
                     <label><input type="checkbox" class="column-toggle" data-column="0" checked> Timestamp</label>
@@ -263,20 +275,22 @@ def process_all_xml_files():
                             <td>{data['message']}
             """)
             if message and 'color: red' in message:
-                next_messages = []
-                next_messages_count = 0
-                for next_idx in range(idx + 1, len(all_extracted_data)):
-                    if next_messages_count >= 3:
-                        break
-                    if all_extracted_data[next_idx]['user_id'] == data['user_id']:
-                        next_messages.append(all_extracted_data[next_idx]['message'])
-                        next_messages_count += 1
-                if next_messages_count > 0:
-                    output_file.write(f"""
-                                <div class="following-messages">
-                                    {''.join([f"<br>{msg}" for msg in next_messages])}
-                                </div>
-                    """)
+                number_match = re.search(r'>(\d+)<', message)
+                if number_match and int(number_match.group(1)) >= 100:
+                    next_messages = []
+                    next_messages_count = 0
+                    for next_idx in range(idx + 1, len(all_extracted_data)):
+                        if next_messages_count >= 3:
+                            break
+                        if all_extracted_data[next_idx]['user_id'] == data['user_id']:
+                            next_messages.append(all_extracted_data[next_idx]['message'])
+                            next_messages_count += 1
+                    if next_messages_count > 0:
+                        output_file.write(f"""
+                            <div class="following-messages">
+                                {''.join([f"<br>{msg}" for msg in next_messages])}
+                            </div>
+                        """)
             output_file.write(f"""
                             </td>
                             <td class="hidden">{accumulated_sum}</td>
@@ -365,7 +379,7 @@ def process_all_xml_files():
         </html>
         """)
 
-    print(f"최종 결과가 {final_output_file} 파일로 저장되었습니다.")
+    print(f"저장되었습니다.")
 
 # 로그인 상태가 저장되어 있는지 확인하고 없으면 저장하도록 유도
 if not os.path.exists(storage_file):
