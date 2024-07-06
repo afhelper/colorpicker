@@ -16,7 +16,7 @@ all_timestamp = []
 
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
-storage_file = os.path.join(desktop_path, 'storage_state.json')
+storage_file = os.path.join(desktop_path, 'code', 'getaf', 'storage_state.json')
 result_folder = os.path.join(desktop_path, 'result')
 final_output_file = os.path.join(desktop_path, 'final_result.html')
 
@@ -53,7 +53,7 @@ def save_login_state():
 def extract_data():
     try:
         with sync_playwright() as p:
-            browser = p.firefox.launch(headless=False)  # headless=True로 설정하여 브라우저가 보이지 않게 함
+            browser = p.firefox.launch(headless=True)  # headless=True로 설정하여 브라우저가 보이지 않게 함
             context = browser.new_context(storage_state=storage_file)
             page = context.new_page()
             
@@ -99,14 +99,15 @@ def extract_data():
 # 주어진 URL 템플릿
 url_template = 'https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={row_key}_c&startTime={start_time}'
 
+
 def fetch_data(row_keys, durations):
-    try:
-        file_counter = 1  # 파일 카운터 초기화
-        for row_key, duration in zip(row_keys, durations):
-            iterations = duration // 300
-            
-            # startTime을 0부터 300씩 증가시키며 (iterations * 300)까지만 순회
-            for start_time in range(0, (iterations + 1) * 300, 300):
+    file_counter = 1  # 파일 카운터 초기화
+    for row_key, duration in zip(row_keys, durations):
+        iterations = duration // 300
+        
+        # startTime을 0부터 300씩 증가시키며 (iterations * 300)까지만 순회
+        for start_time in range(0, (iterations + 1) * 300, 300):
+            try:
                 url = url_template.format(row_key=row_key, start_time=start_time)
                 response = requests.get(url)
                 response.raise_for_status()
@@ -125,9 +126,12 @@ def fetch_data(row_keys, durations):
                 print(f'{url}\n진행중: {xml_file_path}')
                 # 다음 요청 전 1초 대기
                 time.sleep(0.7)
+            except Exception as e:
+                print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
+                continue
 
-    except Exception as e:
-        print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
+
+
 
 # XML 파일에서 필요한 데이터 추출
 def extract_required_data_from_xml(file_path):
@@ -223,16 +227,23 @@ def process_all_xml_files():
         <body>
             <div class="container">
                 <h1>Total Sum of balloon: {total_sum}</h1>
+                <div class="checkbox-container">
+                    <label><input type="checkbox" class="column-toggle" data-column="0" checked> Timestamp</label>
+                    <label><input type="checkbox" class="column-toggle" data-column="1" checked> Nickname</label>
+                    <label><input type="checkbox" class="column-toggle" data-column="2" checked> User ID</label>
+                    <label><input type="checkbox" class="column-toggle" data-column="3" checked> Message</label>
+                    <label><input type="checkbox" class="column-toggle" data-column="4"> Accumulated</label>
+                </div>
                 <button class="btn btn-primary filter-button" onclick="toggleFilter()">Show Only Red Rows</button>
                 <button class="btn btn-secondary filter-button" onclick="toggleHighValueFilter()">Show Only Red Rows with Value >= 100</button>
                 <table class="table table-bordered" id="dataTable">
                     <thead class="thead-dark">
                         <tr>
+                            <th>Timestamp</th>
                             <th>Nickname</th>
                             <th>User ID</th>
                             <th>Message</th>
-                            <th>Accumulated</th>
-                            <th>Timestamp</th>
+                            <th class="hidden">Accumulated</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -247,11 +258,11 @@ def process_all_xml_files():
             timestamp_url = f"{url}?change_second={timestamp-3}"
             output_file.write(f"""
                         <tr>
+                            <td><a href="{timestamp_url}" target="_blank">{format_timestamp(timestamp)}</a></td>
                             <td>{data['nickname']}</td>
                             <td>{data['user_id']}</td>
                             <td>{data['message']}</td>
-                            <td>{accumulated_sum}</td>
-                            <td><a href="{timestamp_url}" target="_blank">{format_timestamp(timestamp)}</a></td>
+                            <td class="hidden">{accumulated_sum}</td>
                         </tr>
             """)
         output_file.write("""
@@ -267,7 +278,7 @@ def process_all_xml_files():
                     isFiltered = !isFiltered;
 
                     rows.forEach(row => {
-                        const messageCell = row.cells[2];
+                        const messageCell = row.cells[3];
                         if (isFiltered) {
                             if (messageCell.innerHTML.includes('color: red')) {
                                 row.classList.remove('hidden');
@@ -287,7 +298,7 @@ def process_all_xml_files():
                     isHighValueFiltered = !isHighValueFiltered;
 
                     rows.forEach(row => {
-                        const messageCell = row.cells[2];
+                        const messageCell = row.cells[3];
                         if (isHighValueFiltered) {
                             const numberMatch = messageCell.innerHTML.match(/>(\\d+)</);
                             if (messageCell.innerHTML.includes('color: red') && numberMatch && parseInt(numberMatch[1]) >= 100) {
@@ -302,6 +313,23 @@ def process_all_xml_files():
 
                     document.querySelectorAll('.filter-button')[1].innerText = isHighValueFiltered ? 'Show All Rows' : 'Show Only Red Rows with Value >= 100';
                 }
+
+                document.querySelectorAll('.column-toggle').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const column = this.dataset.column;
+                        const isChecked = this.checked;
+                        const table = document.getElementById('dataTable');
+                        const rows = table.querySelectorAll('tr');
+                        
+                        rows.forEach(row => {
+                            if (isChecked) {
+                                row.cells[column].classList.remove('hidden');
+                            } else {
+                                row.cells[column].classList.add('hidden');
+                            }
+                        });
+                    });
+                });
             </script>
         </body>
         </html>
