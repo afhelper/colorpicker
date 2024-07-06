@@ -8,7 +8,8 @@ import re
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
-url = "https://vod.afreecatv.com/player/128038555"
+# url = "https://vod.afreecatv.com/player/128038555"
+url = input("url 주소 입력: ")
 
 # 전역 변수 선언
 all_timestamp = []
@@ -22,6 +23,13 @@ final_output_file = os.path.join(desktop_path, 'final_result.html')
 # 결과 폴더가 존재하지 않으면 생성
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
+
+
+def format_timestamp(seconds):
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
 
 def save_login_state():
     with sync_playwright() as p:
@@ -243,7 +251,7 @@ def process_all_xml_files():
                             <td>{data['user_id']}</td>
                             <td>{data['message']}</td>
                             <td>{accumulated_sum}</td>
-                            <td><a href="{timestamp_url}" target="_blank">{timestamp}</a></td>
+                            <td><a href="{timestamp_url}" target="_blank">{format_timestamp(timestamp)}</a></td>
                         </tr>
             """)
         output_file.write("""
