@@ -8,7 +8,6 @@ import re
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
-# url = "https://vod.afreecatv.com/player/128038555"
 url = input("url 주소 입력: ")
 
 # 전역 변수 선언
@@ -131,8 +130,6 @@ def fetch_data(row_keys, durations):
                 continue
 
 
-
-
 # XML 파일에서 필요한 데이터 추출
 def extract_required_data_from_xml(file_path):
     tree = ET.parse(file_path)
@@ -222,6 +219,7 @@ def process_all_xml_files():
             <style>
                 .hidden {{ display: none; }}
                 .filter-button {{ margin-bottom: 10px; }}
+                .following-messages {{ margin-top: 10px; color: grey; }}
             </style>
         </head>
         <body>
@@ -233,6 +231,7 @@ def process_all_xml_files():
                     <label><input type="checkbox" class="column-toggle" data-column="2" checked> User ID</label>
                     <label><input type="checkbox" class="column-toggle" data-column="3" checked> Message</label>
                     <label><input type="checkbox" class="column-toggle" data-column="4"> Accumulated</label>
+                    <label><input type="checkbox" class="following-toggle" checked> Show Following Messages</label>
                 </div>
                 <button class="btn btn-primary filter-button" onclick="toggleFilter()">Show Only Red Rows</button>
                 <button class="btn btn-secondary filter-button" onclick="toggleHighValueFilter()">Show Only Red Rows with Value >= 100</button>
@@ -249,7 +248,7 @@ def process_all_xml_files():
                     <tbody>
         """)
         accumulated_sum = 0
-        for data, timestamp in zip(all_extracted_data, c):
+        for idx, (data, timestamp) in enumerate(zip(all_extracted_data, c)):
             message = data['message']
             if message and 'color: red' in message:
                 number_match = re.search(r'>(\d+)<', message)
@@ -261,7 +260,25 @@ def process_all_xml_files():
                             <td><a href="{timestamp_url}" target="_blank">{format_timestamp(timestamp)}</a></td>
                             <td>{data['nickname']}</td>
                             <td>{data['user_id']}</td>
-                            <td>{data['message']}</td>
+                            <td>{data['message']}
+            """)
+            if message and 'color: red' in message:
+                next_messages = []
+                next_messages_count = 0
+                for next_idx in range(idx + 1, len(all_extracted_data)):
+                    if next_messages_count >= 3:
+                        break
+                    if all_extracted_data[next_idx]['user_id'] == data['user_id']:
+                        next_messages.append(all_extracted_data[next_idx]['message'])
+                        next_messages_count += 1
+                if next_messages_count > 0:
+                    output_file.write(f"""
+                                <div class="following-messages">
+                                    {''.join([f"<br>{msg}" for msg in next_messages])}
+                                </div>
+                    """)
+            output_file.write(f"""
+                            </td>
                             <td class="hidden">{accumulated_sum}</td>
                         </tr>
             """)
@@ -328,6 +345,19 @@ def process_all_xml_files():
                                 row.cells[column].classList.add('hidden');
                             }
                         });
+                    });
+                });
+
+                document.querySelector('.following-toggle').addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    const messages = document.querySelectorAll('.following-messages');
+                    
+                    messages.forEach(message => {
+                        if (isChecked) {
+                            message.classList.remove('hidden');
+                        } else {
+                            message.classList.add('hidden');
+                        }
                     });
                 });
             </script>
