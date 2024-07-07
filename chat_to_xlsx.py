@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 import re
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.worksheet.hyperlink import Hyperlink
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
@@ -216,11 +217,12 @@ def process_all_xml_files():
 
     # 헤더 추가 및 스타일 적용
     headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Message', 'Accumulated']
+    header_fill = PatternFill(start_color="eccfff", end_color="eccfff", fill_type="solid")
     for col, header in enumerate(headers, start=1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True)
         cell.alignment = Alignment(horizontal='center')  # 모든 헤더를 중앙 정렬
-
+        cell.fill = header_fill
     # 데이터 추가
     accumulated_sum = 0
     for idx, (data, timestamp) in enumerate(zip(all_extracted_data, c), start=2):
@@ -238,7 +240,10 @@ def process_all_xml_files():
 
         # 각 셀에 데이터 추가 및 스타일 적용
         ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
-        ws.cell(row=idx, column=2, value=format_timestamp(timestamp)).alignment = Alignment(horizontal='center')
+        timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
+        timestamp_cell.alignment = Alignment(horizontal='center')
+        timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={int(timestamp)-3}")  # 하이퍼링크 추가
+        timestamp_cell.font = Font(color="6262ff", underline="single")
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=5, value=data['message'])  # 메시지 열은 중앙 정렬하지 않음
@@ -259,7 +264,7 @@ def process_all_xml_files():
 
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', 'test11133319.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개_test.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
