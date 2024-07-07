@@ -262,6 +262,8 @@ def process_all_xml_files():
         adjusted_width = min((max_length + 2) * 1.2, 100)  # 최대 80으로 제한
         ws.column_dimensions[column_letter].width = adjusted_width
 
+    # 필터링
+    ws.auto_filter.ref = ws.dimensions
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
     excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개_test.xlsx')
