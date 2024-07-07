@@ -159,7 +159,10 @@ def extract_required_data_from_xml(file_path):
                 timestamp = element.find('t').text if element.find('t') is not None else ''
             
             all_timestamp.append(timestamp)
-            
+
+            # 유저 아이디에서 괄호와 숫자 제거
+            user_id = re.sub(r'\(\d+\)$', '', user_id)
+
             extracted_data.append({
                 'tag': element.tag,
                 'nickname': nickname,
@@ -245,15 +248,16 @@ def process_all_xml_files():
         ws.column_dimensions[column_letter].width = adjusted_width
 
     # 파일 저장
-    excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
+    # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', 'test15.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
 # 메인 실행 부분
-if not os.path.exists(storage_file):
-    save_login_state()
+# if not os.path.exists(storage_file):
+#     save_login_state()
 
-extract_data()
+# extract_data()
 process_all_xml_files()
