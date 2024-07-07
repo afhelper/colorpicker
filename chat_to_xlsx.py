@@ -151,7 +151,6 @@ def extract_required_data_from_xml(file_path):
                 
                 if message and message.isdigit():
                     total_sum += int(message)
-                message = f'<span style="color: red;">{message}</span>'
             else:
                 nickname = element.find('n').text if element.find('n') is not None else ''
                 user_id = element.find('u').text if element.find('u') is not None else ''
@@ -172,6 +171,17 @@ def extract_required_data_from_xml(file_path):
             })
     
     return extracted_data, total_sum
+
+def find_and_append_chat_messages(data, current_index):
+    user_id = data[current_index]['user_id']
+    chat_messages = []
+    for i in range(current_index + 1, len(data)):
+        if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+            chat_messages.append(data[i]['message'])
+        if len(chat_messages) == 3:
+            break
+    if chat_messages:
+        data[current_index]['message'] += f" | {' | '.join(chat_messages)}"
 
 def process_all_xml_files():
     all_extracted_data = []
@@ -215,15 +225,15 @@ def process_all_xml_files():
     accumulated_sum = 0
     for idx, (data, timestamp) in enumerate(zip(all_extracted_data, c), start=2):
         message = data['message']
-        if message and 'color: red' in message:
-            number_match = re.search(r'>(\d+)<', message)
-            if number_match:
-                balloon_value = int(number_match.group(1))
+        if data['tag'] in ['balloon', 'adballoon']:
+            if message and message.isdigit():
+                balloon_value = int(message)
                 accumulated_sum += balloon_value
-                message = str(balloon_value)  # 숫자만 표시
-                
-                # 값이 100 이상인 경우에만 배경색 변경
+
+                # 값이 100 이상인 경우 chat 메시지 추가
                 if balloon_value >= 100:
+                    find_and_append_chat_messages(all_extracted_data, idx-2)
+                    # 값이 100 이상인 경우에만 배경색 변경
                     ws.cell(row=idx, column=5).fill = PatternFill(start_color="FFCCCB", end_color="FFCCCB", fill_type="solid")
 
         # 각 셀에 데이터 추가 및 스타일 적용
@@ -231,7 +241,7 @@ def process_all_xml_files():
         ws.cell(row=idx, column=2, value=format_timestamp(timestamp)).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
-        ws.cell(row=idx, column=5, value=message)  # 메시지 열은 중앙 정렬하지 않음
+        ws.cell(row=idx, column=5, value=data['message'])  # 메시지 열은 중앙 정렬하지 않음
         ws.cell(row=idx, column=6, value=accumulated_sum).alignment = Alignment(horizontal='center')
 
     # 열 너비 자동 조정 (최대 80으로 제한)
@@ -249,15 +259,15 @@ def process_all_xml_files():
 
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', 'test15.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', 'test11133319.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
 # 메인 실행 부분
-# if not os.path.exists(storage_file):
-#     save_login_state()
+if not os.path.exists(storage_file):
+    save_login_state()
 
-# extract_data()
+extract_data()
 process_all_xml_files()
