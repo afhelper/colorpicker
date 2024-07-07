@@ -199,7 +199,8 @@ def process_all_xml_files():
     # Excel 파일 생성
     wb = Workbook()
     ws = wb.active
-    ws.title = broadcast_title[:31]  # Excel sheet 이름 제한
+    # ws.title = broadcast_title[:31]  # Excel sheet 이름 제한
+    ws.title = "excel"
 
     # 헤더 추가
     headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Message', 'Accumulated']
@@ -228,8 +229,21 @@ def process_all_xml_files():
         ws.cell(row=idx, column=5, value=message)
         ws.cell(row=idx, column=6, value=accumulated_sum)
 
+    # 열 너비 자동 조정 (최대 80으로 제한)
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min((max_length + 2) * 1.2, 100)  # 최대 80으로 제한
+        ws.column_dimensions[column_letter].width = adjusted_width
+
     # 파일 저장
-    excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title}.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
