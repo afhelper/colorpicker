@@ -6,7 +6,7 @@ import os
 import xml.etree.ElementTree as ET
 import re
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font, PatternFill, Alignment
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
@@ -199,13 +199,14 @@ def process_all_xml_files():
     # Excel 파일 생성
     wb = Workbook()
     ws = wb.active
-    # ws.title = broadcast_title[:31]  # Excel sheet 이름 제한
     ws.title = "excel"
 
-    # 헤더 추가
+    # 헤더 추가 및 스타일 적용
     headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Message', 'Accumulated']
     for col, header in enumerate(headers, start=1):
-        ws.cell(row=1, column=col, value=header).font = Font(bold=True)
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')  # 모든 헤더를 중앙 정렬
 
     # 데이터 추가
     accumulated_sum = 0
@@ -222,12 +223,13 @@ def process_all_xml_files():
                 if balloon_value >= 100:
                     ws.cell(row=idx, column=5).fill = PatternFill(start_color="FFCCCB", end_color="FFCCCB", fill_type="solid")
 
-        ws.cell(row=idx, column=1, value=data['tag'])
-        ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
-        ws.cell(row=idx, column=3, value=data['nickname'])
-        ws.cell(row=idx, column=4, value=data['user_id'])
-        ws.cell(row=idx, column=5, value=message)
-        ws.cell(row=idx, column=6, value=accumulated_sum)
+        # 각 셀에 데이터 추가 및 스타일 적용
+        ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=2, value=format_timestamp(timestamp)).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=5, value=message)  # 메시지 열은 중앙 정렬하지 않음
+        ws.cell(row=idx, column=6, value=accumulated_sum).alignment = Alignment(horizontal='center')
 
     # 열 너비 자동 조정 (최대 80으로 제한)
     for column in ws.columns:
