@@ -202,7 +202,7 @@ def process_all_xml_files():
     ws.title = broadcast_title[:31]  # Excel sheet 이름 제한
 
     # 헤더 추가
-    headers = ['Timestamp', 'Nickname', 'User ID', 'Message', 'Accumulated']
+    headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Message', 'Accumulated']
     for col, header in enumerate(headers, start=1):
         ws.cell(row=1, column=col, value=header).font = Font(bold=True)
 
@@ -213,15 +213,20 @@ def process_all_xml_files():
         if message and 'color: red' in message:
             number_match = re.search(r'>(\d+)<', message)
             if number_match:
-                accumulated_sum += int(number_match.group(1))
-                message = number_match.group(1)
-                ws.cell(row=idx, column=4).fill = PatternFill(start_color="FFCCCB", end_color="FFCCCB", fill_type="solid")
+                balloon_value = int(number_match.group(1))
+                accumulated_sum += balloon_value
+                message = str(balloon_value)  # 숫자만 표시
+                
+                # 값이 100 이상인 경우에만 배경색 변경
+                if balloon_value >= 100:
+                    ws.cell(row=idx, column=5).fill = PatternFill(start_color="FFCCCB", end_color="FFCCCB", fill_type="solid")
 
-        ws.cell(row=idx, column=1, value=format_timestamp(timestamp))
-        ws.cell(row=idx, column=2, value=data['nickname'])
-        ws.cell(row=idx, column=3, value=data['user_id'])
-        ws.cell(row=idx, column=4, value=message)
-        ws.cell(row=idx, column=5, value=accumulated_sum)
+        ws.cell(row=idx, column=1, value=data['tag'])
+        ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
+        ws.cell(row=idx, column=3, value=data['nickname'])
+        ws.cell(row=idx, column=4, value=data['user_id'])
+        ws.cell(row=idx, column=5, value=message)
+        ws.cell(row=idx, column=6, value=accumulated_sum)
 
     # 파일 저장
     excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title}.xlsx')
