@@ -236,6 +236,7 @@ def process_all_xml_files():
                 accumulated_sum += balloon_value
 
                 if balloon_value >= 100:
+                    message = ''
                     follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
                     ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
                     ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
