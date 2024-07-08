@@ -216,10 +216,10 @@ def process_all_xml_files():
 
     # 헤더 추가 및 스타일 적용
     headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Balloons', 'Message', 'FollowMessage', 'Accumulated']
-    header_fill = PatternFill(start_color="eccfff", end_color="eccfff", fill_type="solid")
+    header_fill = PatternFill(start_color="969696", end_color="969696", fill_type="solid")
     for col, header in enumerate(headers, start=1):
         cell = ws.cell(row=1, column=col, value=header)
-        cell.font = Font(bold=True)
+        cell.font = Font(color="FFFFFF", bold=True)
         cell.alignment = Alignment(horizontal='center')
         cell.fill = header_fill
 
@@ -237,8 +237,8 @@ def process_all_xml_files():
 
                 if balloon_value >= 100:
                     follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
-                    ws.cell(row=idx, column=5).fill = PatternFill(start_color="e6fffd", end_color="FFCCCB", fill_type="solid")
-                    ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9fe", end_color="FFCCCB", fill_type="solid")
+                    ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
+                    ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
                 else:
                     message = ''
         # 각 셀에 데이터 추가 및 스타일 적용
@@ -272,7 +272,7 @@ def process_all_xml_files():
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
     # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개_test.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중16.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중42.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
