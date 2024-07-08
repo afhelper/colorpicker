@@ -181,8 +181,7 @@ def find_and_append_chat_messages(data, current_index):
             chat_messages.append(data[i]['message'])
         if len(chat_messages) == 3:
             break
-    if chat_messages:
-        data[current_index]['message'] += f" | {' | '.join(chat_messages)}"
+    return chat_messages
 
 def process_all_xml_files():
     all_extracted_data = []
@@ -210,44 +209,50 @@ def process_all_xml_files():
                 prev_value = c[-1]
             c.append(float(prev_value + current_value))
 
-    # Excel 파일 생성
+    # Excel 파일 생성 부분
     wb = Workbook()
     ws = wb.active
     ws.title = "excel"
 
     # 헤더 추가 및 스타일 적용
-    headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Message', 'Accumulated']
+    headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Balloons', 'Message', 'FollowMessage', 'Accumulated']
     header_fill = PatternFill(start_color="eccfff", end_color="eccfff", fill_type="solid")
     for col, header in enumerate(headers, start=1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = Font(bold=True)
-        cell.alignment = Alignment(horizontal='center')  # 모든 헤더를 중앙 정렬
+        cell.alignment = Alignment(horizontal='center')
         cell.fill = header_fill
+
     # 데이터 추가
     accumulated_sum = 0
     for idx, (data, timestamp) in enumerate(zip(all_extracted_data, c), start=2):
         message = data['message']
+        balloon_value = 0
+        follow_messages = []
+
         if data['tag'] in ['balloon', 'adballoon']:
             if message and message.isdigit():
                 balloon_value = int(message)
                 accumulated_sum += balloon_value
 
-                # 값이 100 이상인 경우 chat 메시지 추가
                 if balloon_value >= 100:
-                    find_and_append_chat_messages(all_extracted_data, idx-2)
-                    # 값이 100 이상인 경우에만 배경색 변경
-                    ws.cell(row=idx, column=5).fill = PatternFill(start_color="FFCCCB", end_color="FFCCCB", fill_type="solid")
-
+                    follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
+                    ws.cell(row=idx, column=5).fill = PatternFill(start_color="e6fffd", end_color="FFCCCB", fill_type="solid")
+                    ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9fe", end_color="FFCCCB", fill_type="solid")
+                else:
+                    message = ''
         # 각 셀에 데이터 추가 및 스타일 적용
         ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
         timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
         timestamp_cell.alignment = Alignment(horizontal='center')
-        timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={int(timestamp)-3}")  # 하이퍼링크 추가
+        timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={int(timestamp)-3}")
         timestamp_cell.font = Font(color="6262ff", underline="single")
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
-        ws.cell(row=idx, column=5, value=data['message'])  # 메시지 열은 중앙 정렬하지 않음
-        ws.cell(row=idx, column=6, value=accumulated_sum).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=5, value=balloon_value if balloon_value >= 1 else 0).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=6, value=follow_messages[0] if follow_messages else message)
+        ws.cell(row=idx, column=7, value=" | ".join(follow_messages[1:3]) if len(follow_messages) > 1 else "")
+        ws.cell(row=idx, column=8, value=accumulated_sum).alignment = Alignment(horizontal='center')
 
     # 열 너비 자동 조정 (최대 80으로 제한)
     for column in ws.columns:
@@ -259,22 +264,23 @@ def process_all_xml_files():
                     max_length = len(str(cell.value))
             except:
                 pass
-        adjusted_width = min((max_length + 2) * 1.2, 100)  # 최대 80으로 제한
+        adjusted_width = min((max_length + 2) * 1.2, 60)  # 최대 80으로 제한
         ws.column_dimensions[column_letter].width = adjusted_width
 
     # 필터링
     ws.auto_filter.ref = ws.dimensions
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개_test.xlsx')
+    # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개_test.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중16.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
 # 메인 실행 부분
-if not os.path.exists(storage_file):
-    save_login_state()
+# if not os.path.exists(storage_file):
+#     save_login_state()
 
-extract_data()
+# extract_data()
 process_all_xml_files()
