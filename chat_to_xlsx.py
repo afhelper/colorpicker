@@ -260,8 +260,9 @@ def process_all_xml_files():
         ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
         timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
         timestamp_cell.alignment = Alignment(horizontal='center')
-        timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-3}")
-        timestamp_cell.font = Font(color="6262ff", underline="single")
+        if balloon_value >= 300:
+            timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-3}")
+            timestamp_cell.font = Font(color="6262ff", underline="single")
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=5, value=balloon_value if balloon_value >= 1 else 0).alignment = Alignment(horizontal='center')
@@ -287,15 +288,15 @@ def process_all_xml_files():
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
     # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중52.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중58.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
 # 메인 실행 부분
-# if not os.path.exists(storage_file):
-#     save_login_state()
+if not os.path.exists(storage_file):
+    save_login_state()
 
-# extract_data()
+extract_data()
 process_all_xml_files()
