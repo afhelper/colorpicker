@@ -8,6 +8,7 @@ import re
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.worksheet.hyperlink import Hyperlink
+from urllib.parse import quote
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
@@ -24,6 +25,20 @@ result_folder = os.path.join(desktop_path, 'result')
 # 결과 폴더가 존재하지 않으면 생성
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
+
+
+# 위험한 문자 리스트
+dangerous_chars = ['=', '+', '-', '@', '\\']
+
+def sanitize_string(value):
+    if value is None:
+        return ''
+    if not isinstance(value, str):
+        return f'{value}'
+    if any(value.startswith(char) for char in dangerous_chars):
+        return f' {value}'
+    return f'{value}'
+
 
 def format_timestamp(seconds):
     hours = seconds // 3600
@@ -162,12 +177,12 @@ def extract_required_data_from_xml(file_path):
 
             # 유저 아이디에서 괄호와 숫자 제거
             user_id = re.sub(r'\(\d+\)$', '', user_id)
-
+            
             extracted_data.append({
                 'tag': element.tag,
-                'nickname': nickname,
+                'nickname': sanitize_string(nickname),
                 'user_id': user_id,
-                'message': message,
+                'message': sanitize_string(message),
                 'timestamp': timestamp
             })
     
@@ -246,7 +261,7 @@ def process_all_xml_files():
         ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
         timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
         timestamp_cell.alignment = Alignment(horizontal='center')
-        timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={int(timestamp)-3}")
+        timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-3}")
         timestamp_cell.font = Font(color="6262ff", underline="single")
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
@@ -272,8 +287,8 @@ def process_all_xml_files():
     ws.auto_filter.ref = ws.dimensions
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
-    # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개_test.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중42.xlsx')
+    # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중52.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
