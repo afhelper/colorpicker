@@ -50,7 +50,8 @@
 206           WOP
 207           디스코테카
 209           사기캐
-215           LOVE BOMB
+215           Love Bomb
+223           Pink Lady
 225           왠지
 228           Levitating
 244           베베
