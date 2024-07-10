@@ -210,48 +210,61 @@ def extract_required_data_from_xml(file_path):
 #             break
 #     return chat_messages
 
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#         if len(chat_messages) == 3:
+#             break
+#     return chat_messages if chat_messages else ['']
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#             if len(chat_messages) == 3:
+#                 break
+#     return chat_messages if chat_messages else ['']
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#             if len(chat_messages) == 3:
+#                 break
+#     return chat_messages if chat_messages else ['']
+
+#클로드타임
 def find_and_append_chat_messages(data, current_index, current_timestamp):
     user_id = data[current_index]['user_id']
     chat_messages = []
     for i in range(current_index + 1, len(data)):
         next_timestamp = float(data[i]['timestamp'])
-        # 1분 (60초) 이내의 메시지만 포함
         if next_timestamp > current_timestamp + 60:
             break
         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
             chat_messages.append(data[i]['message'])
-        if len(chat_messages) == 3:
-            break
+        elif data[i]['tag'] in ['balloon', 'adballoon'] and data[i]['user_id'] == user_id:
+            break  # 다음 balloon 메시지에서 중단
     return chat_messages if chat_messages else ['']
-
-# def find_and_append_chat_messages(data, current_index, current_timestamp):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         next_timestamp = float(data[i]['timestamp'])
-#         # 1분 (60초) 이내의 메시지만 포함
-#         if next_timestamp > current_timestamp + 60:
-#             break
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
-#             chat_messages.append(data[i]['message'])
-#             if len(chat_messages) == 3:
-#                 break
-#     return chat_messages if chat_messages else ['']
-
-# def find_and_append_chat_messages(data, current_index, current_timestamp):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         next_timestamp = float(data[i]['timestamp'])
-#         # 1분 (60초) 이내의 메시지만 포함
-#         if next_timestamp > current_timestamp + 60:
-#             break
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
-#             chat_messages.append(data[i]['message'])
-#             if len(chat_messages) == 3:
-#                 break
-#     return chat_messages if chat_messages else ['']
-
 
 
 
@@ -363,7 +376,7 @@ def process_all_xml_files():
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
     # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', '뉴팔로우진행중2.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '뉴팔로우진행중6.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
