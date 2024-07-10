@@ -39,11 +39,13 @@ def sanitize_string(value):
     return f'{value}'
 
 
-def format_timestamp(seconds):
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    seconds = seconds % 60
-    return f"{round(hours):02}:{round(minutes):02}:{round(seconds):02}"
+def format_timestamp(total_seconds):
+    total_seconds = round(total_seconds)
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
 
 def save_login_state():
     with sync_playwright() as p:
@@ -187,15 +189,74 @@ def extract_required_data_from_xml(file_path):
     
     return extracted_data, total_sum
 
-def find_and_append_chat_messages(data, current_index):
+# def find_and_append_chat_messages(data, current_index):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#         if len(chat_messages) == 3:
+#             break
+#     return chat_messages
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id and next_timestamp <= current_timestamp + 60:
+#             chat_messages.append(data[i]['message'])
+#         if len(chat_messages) == 3:
+#             break
+#     return chat_messages
+
+def find_and_append_chat_messages(data, current_index, current_timestamp):
     user_id = data[current_index]['user_id']
     chat_messages = []
     for i in range(current_index + 1, len(data)):
+        next_timestamp = float(data[i]['timestamp'])
+        # 1분 (60초) 이내의 메시지만 포함
+        if next_timestamp > current_timestamp + 60:
+            break
         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
             chat_messages.append(data[i]['message'])
         if len(chat_messages) == 3:
             break
-    return chat_messages
+    return chat_messages if chat_messages else ['']
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#             if len(chat_messages) == 3:
+#                 break
+#     return chat_messages if chat_messages else ['']
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#             if len(chat_messages) == 3:
+#                 break
+#     return chat_messages if chat_messages else ['']
+
+
+
+
+
+
 
 def process_all_xml_files():
     all_extracted_data = []
@@ -249,19 +310,33 @@ def process_all_xml_files():
                 balloon_value = int(message)
                 accumulated_sum += balloon_value
 
+                # if balloon_value >= 100:
+                #     message = ''
+                #     follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
+                #     ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
+                #     ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
+                # else:
+                #     message = ''
                 if balloon_value >= 100:
                     message = ''
-                    follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
+                    follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2, timestamp)
                     ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
                     ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
                 else:
                     message = ''
+
+
+
+
+
+
+
         # 각 셀에 데이터 추가 및 스타일 적용
         ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
         timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
         timestamp_cell.alignment = Alignment(horizontal='center')
         if balloon_value >= 300:
-            timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-3}")
+            timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-4}")
             timestamp_cell.font = Font(color="6262ff", underline="single")
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
@@ -288,15 +363,15 @@ def process_all_xml_files():
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
     # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', '팔로우진행중58.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '뉴팔로우진행중2.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
 # 메인 실행 부분
-if not os.path.exists(storage_file):
-    save_login_state()
+# if not os.path.exists(storage_file):
+#     save_login_state()
 
-extract_data()
+# extract_data()
 process_all_xml_files()
