@@ -5,6 +5,9 @@ from playwright.sync_api import sync_playwright
 import os
 import xml.etree.ElementTree as ET
 import re
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.worksheet.hyperlink import Hyperlink
 
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
@@ -17,52 +20,59 @@ broadcast_title = ''
 desktop_path = os.path.expanduser("~/Desktop")
 storage_file = os.path.join(desktop_path, 'code', 'getaf', 'storage_state.json')
 result_folder = os.path.join(desktop_path, 'result')
-# final_output_file = os.path.join(desktop_path, 'final_result.html')
-# final_output_file = desktop_path
 
 # 결과 폴더가 존재하지 않으면 생성
 if not os.path.exists(result_folder):
     os.makedirs(result_folder)
 
 
-def format_timestamp(seconds):
-    hours = seconds // 3600
-    minutes = (seconds % 3600) // 60
-    seconds = seconds % 60
-    return f"{round(hours):02}:{round(minutes):02}:{round(seconds):02}"
+# 위험한 문자 리스트
+dangerous_chars = ['=', '+', '-', '@', '\\']
+
+def sanitize_string(value):
+    if value is None:
+        return ''
+    if not isinstance(value, str):
+        return f'{value}'
+    if any(value.startswith(char) for char in dangerous_chars):
+        return f' {value}'
+    return f'{value}'
+
+
+def format_timestamp(total_seconds):
+    total_seconds = round(total_seconds)
+    hours = total_seconds // 3600
+    minutes = (total_seconds % 3600) // 60
+    seconds = total_seconds % 60
+    return f"{hours:02}:{minutes:02}:{seconds:02}"
+
 
 def save_login_state():
     with sync_playwright() as p:
-        browser = p.firefox.launch(headless=False)  # headless=False로 설정하여 사용자가 브라우저를 볼 수 있게 함
+        browser = p.firefox.launch(headless=False)
         context = browser.new_context()
         page = context.new_page()
         
-        # 로그인 페이지로 이동
         page.goto(login_url)
         
-        # 사용자가 로그인할 시간을 줌
         print("로그인 후 계속 진행하려면 Enter 키를 누르세요...")
         input()
         
-        # 로그인 상태 저장
         context.storage_state(path=storage_file)
         browser.close()
         print("로그인 상태가 저장되었습니다.")
 
-# 로그인 상태를 유지하며 데이터 추출
 def extract_data():
     global broadcast_title
     try:
         with sync_playwright() as p:
-            browser = p.firefox.launch(headless=True)  # headless=True로 설정하여 브라우저가 보이지 않게 함
+            browser = p.firefox.launch(headless=True)
             context = browser.new_context(storage_state=storage_file)
             page = context.new_page()
             
-            # 목표 페이지로 이동
             page.goto(url)
             time.sleep(2)
 
-            # broadcast_title 클래스의 title 속성 값 가져오기
             title_selector = ".broadcast_title"
             title_element = page.query_selector(title_selector)
             if title_element:
@@ -71,7 +81,6 @@ def extract_data():
             else:
                 print("Broadcast title element not found.")
 
-            # JavaScript 실행하여 vodCore 객체 추출
             script = """
             () => {
                 function getCircularReplacer() {
@@ -91,7 +100,6 @@ def extract_data():
             """
             vodcore_data = page.evaluate(script)
 
-            # JSON 형식으로 변환
             vodcore_json = json.loads(vodcore_data)
 
             row_keys = [item['fileInfoKey'] for item in vodcore_json['fileItems']]
@@ -106,16 +114,13 @@ def extract_data():
         save_login_state()
         extract_data()
 
-# 주어진 URL 템플릿
 url_template = 'https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={row_key}_c&startTime={start_time}'
 
-
 def fetch_data(row_keys, durations):
-    file_counter = 1  # 파일 카운터 초기화
+    file_counter = 1
     for row_key, duration in zip(row_keys, durations):
         iterations = duration // 300
         
-        # startTime을 0부터 300씩 증가시키며 (iterations * 300)까지만 순회
         for start_time in range(0, (iterations + 1) * 300, 300):
             try:
                 url = url_template.format(row_key=row_key, start_time=start_time)
@@ -124,24 +129,19 @@ def fetch_data(row_keys, durations):
                 
                 xml_data = response.content
                 
-                # 파일 이름을 동적으로 설정
-                file_name = f"chat_{file_counter:04}.xml"  # 파일 이름 형식 설정
+                file_name = f"chat_{file_counter:04}.xml"
                 file_counter += 1
                 xml_file_path = os.path.join(result_folder, file_name)
                 
-                # XML 데이터를 파일로 저장
                 with open(xml_file_path, "wb") as xml_file:
                     xml_file.write(xml_data)
 
                 print(f'{url}\n진행중: {xml_file_path}')
-                # 다음 요청 전 1초 대기
                 time.sleep(0.7)
             except Exception as e:
                 print(f"데이터 추출 중 오류가 발생했습니다: {str(e)}")
                 continue
 
-
-# XML 파일에서 필요한 데이터 추출
 def extract_required_data_from_xml(file_path):
     tree = ET.parse(file_path)
     root = tree.getroot()
@@ -166,35 +166,102 @@ def extract_required_data_from_xml(file_path):
                 message = element.find('c').text if element.find('c') is not None else ''
                 timestamp = element.find('t').text if element.find('t') is not None else ''
                 
-                # c 필드의 값을 숫자로 변환하여 합산
                 if message and message.isdigit():
                     total_sum += int(message)
-                message = f'<span style="color: red;">{message}</span>'
             else:
                 nickname = element.find('n').text if element.find('n') is not None else ''
                 user_id = element.find('u').text if element.find('u') is not None else ''
                 message = element.find('m').text if element.find('m') is not None else ''
                 timestamp = element.find('t').text if element.find('t') is not None else ''
             
-            # all_timestamp에 timestamp 저장
             all_timestamp.append(timestamp)
+
+            # 유저 아이디에서 괄호와 숫자 제거
+            user_id = re.sub(r'\(\d+\)$', '', user_id)
             
             extracted_data.append({
                 'tag': element.tag,
-                'nickname': nickname,
+                'nickname': sanitize_string(nickname),
                 'user_id': user_id,
-                'message': message,
+                'message': sanitize_string(message),
                 'timestamp': timestamp
             })
     
     return extracted_data, total_sum
 
-# 모든 XML 파일 처리 및 결과 저장
+# def find_and_append_chat_messages(data, current_index):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#         if len(chat_messages) == 3:
+#             break
+#     return chat_messages
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id and next_timestamp <= current_timestamp + 60:
+#             chat_messages.append(data[i]['message'])
+#         if len(chat_messages) == 3:
+#             break
+#     return chat_messages
+
+def find_and_append_chat_messages(data, current_index, current_timestamp):
+    user_id = data[current_index]['user_id']
+    chat_messages = []
+    for i in range(current_index + 1, len(data)):
+        next_timestamp = float(data[i]['timestamp'])
+        # 1분 (60초) 이내의 메시지만 포함
+        if next_timestamp > current_timestamp + 60:
+            break
+        if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+            chat_messages.append(data[i]['message'])
+        if len(chat_messages) == 3:
+            break
+    return chat_messages if chat_messages else ['']
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#             if len(chat_messages) == 3:
+#                 break
+#     return chat_messages if chat_messages else ['']
+
+# def find_and_append_chat_messages(data, current_index, current_timestamp):
+#     user_id = data[current_index]['user_id']
+#     chat_messages = []
+#     for i in range(current_index + 1, len(data)):
+#         next_timestamp = float(data[i]['timestamp'])
+#         # 1분 (60초) 이내의 메시지만 포함
+#         if next_timestamp > current_timestamp + 60:
+#             break
+#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
+#             chat_messages.append(data[i]['message'])
+#             if len(chat_messages) == 3:
+#                 break
+#     return chat_messages if chat_messages else ['']
+
+
+
+
+
+
+
 def process_all_xml_files():
     all_extracted_data = []
     total_sum = 0
 
-    # result 폴더의 모든 XML 파일 처리
     for filename in sorted(os.listdir(result_folder)):
         if filename.endswith('.xml'):
             file_path = os.path.join(result_folder, filename)
@@ -202,15 +269,12 @@ def process_all_xml_files():
             total_sum += file_sum
             all_extracted_data.extend(extracted_data)
     
-    # 주어진 로직을 사용하여 c 배열 계산
     b = all_timestamp
     c = []
 
-    # 초기값 설정
     prev_value = 0
 
     for i in range(len(b)):
-        # 문자열을 float로 변환
         current_value = float(b[i])
         
         if i == 0:
@@ -220,173 +284,94 @@ def process_all_xml_files():
                 prev_value = c[-1]
             c.append(float(prev_value + current_value))
 
-    # HTML 파일 생성 및 저장
-    with open(os.path.join(desktop_path, 'result', f'{broadcast_title}.html'), 'w', encoding='utf-8') as output_file:
-        output_file.write(f"""
-        <html>
-        <head>
-            <title>{broadcast_title}</title>
-            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-            <style>
-                .hidden {{ display: none; }}
-                .filter-button {{ margin-bottom: 10px; }}
-                .following-messages {{ margin-top: 10px; color: grey; }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h1>{broadcast_title}</h1>
-                <h1>Total Sum of balloon: {total_sum}</h1>
-                <div class="checkbox-container">
-                    <label><input type="checkbox" class="column-toggle" data-column="0" checked> Timestamp</label>
-                    <label><input type="checkbox" class="column-toggle" data-column="1" checked> Nickname</label>
-                    <label><input type="checkbox" class="column-toggle" data-column="2" checked> User ID</label>
-                    <label><input type="checkbox" class="column-toggle" data-column="3" checked> Message</label>
-                    <label><input type="checkbox" class="column-toggle" data-column="4"> Accumulated</label>
-                    <label><input type="checkbox" class="following-toggle" checked> Show Following Messages</label>
-                </div>
-                <button class="btn btn-primary filter-button" onclick="toggleFilter()">Show Only Red Rows</button>
-                <button class="btn btn-secondary filter-button" onclick="toggleHighValueFilter()">Show Only Red Rows with Value >= 100</button>
-                <table class="table table-bordered" id="dataTable">
-                    <thead class="thead-dark">
-                        <tr>
-                            <th>Timestamp</th>
-                            <th>Nickname</th>
-                            <th>User ID</th>
-                            <th>Message</th>
-                            <th class="hidden">Accumulated</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        """)
-        accumulated_sum = 0
-        for idx, (data, timestamp) in enumerate(zip(all_extracted_data, c)):
-            message = data['message']
-            if message and 'color: red' in message:
-                number_match = re.search(r'>(\d+)<', message)
-                if number_match:
-                    accumulated_sum += int(number_match.group(1))
-            timestamp_url = f"{url}?change_second={timestamp-3}"
-            output_file.write(f"""
-                        <tr>
-                            <td><a href="{timestamp_url}" target="_blank">{format_timestamp(timestamp)}</a></td>
-                            <td>{data['nickname']}</td>
-                            <td>{data['user_id']}</td>
-                            <td>{data['message']}
-            """)
-            if message and 'color: red' in message:
-                number_match = re.search(r'>(\d+)<', message)
-                if number_match and int(number_match.group(1)) >= 100:
-                    next_messages = []
-                    next_messages_count = 0
-                    for next_idx in range(idx + 1, len(all_extracted_data)):
-                        if next_messages_count >= 3:
-                            break
-                        if all_extracted_data[next_idx]['user_id'] == data['user_id']:
-                            next_messages.append(all_extracted_data[next_idx]['message'])
-                            next_messages_count += 1
-                    if next_messages_count > 0:
-                        output_file.write(f"""
-                            <div class="following-messages">
-                                {''.join([f"<br>{msg}" for msg in next_messages])}
-                            </div>
-                        """)
-            output_file.write(f"""
-                            </td>
-                            <td class="hidden">{accumulated_sum}</td>
-                        </tr>
-            """)
-        output_file.write("""
-                    </tbody>
-                </table>
-            </div>
-            <script>
-                let isFiltered = false;
-                let isHighValueFiltered = false;
+    # Excel 파일 생성 부분
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "excel"
 
-                function toggleFilter() {
-                    const rows = document.querySelectorAll('#dataTable tbody tr');
-                    isFiltered = !isFiltered;
+    # 헤더 추가 및 스타일 적용
+    headers = ['Tag', 'Timestamp', 'Nickname', 'User ID', 'Balloons', 'Message', 'FollowMessage', 'Accumulated']
+    header_fill = PatternFill(start_color="969696", end_color="969696", fill_type="solid")
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = Font(color="FFFFFF", bold=True)
+        cell.alignment = Alignment(horizontal='center')
+        cell.fill = header_fill
 
-                    rows.forEach(row => {
-                        const messageCell = row.cells[3];
-                        if (isFiltered) {
-                            if (messageCell.innerHTML.includes('color: red')) {
-                                row.classList.remove('hidden');
-                            } else {
-                                row.classList.add('hidden');
-                            }
-                        } else {
-                            row.classList.remove('hidden');
-                        }
-                    });
+    # 데이터 추가
+    accumulated_sum = 0
+    for idx, (data, timestamp) in enumerate(zip(all_extracted_data, c), start=2):
+        message = data['message']
+        balloon_value = 0
+        follow_messages = []
 
-                    document.querySelector('.filter-button').innerText = isFiltered ? 'Show All Rows' : 'Show Only Red Rows';
-                }
+        if data['tag'] in ['balloon', 'adballoon']:
+            if message and message.isdigit():
+                balloon_value = int(message)
+                accumulated_sum += balloon_value
 
-                function toggleHighValueFilter() {
-                    const rows = document.querySelectorAll('#dataTable tbody tr');
-                    isHighValueFiltered = !isHighValueFiltered;
+                # if balloon_value >= 100:
+                #     message = ''
+                #     follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
+                #     ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
+                #     ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
+                # else:
+                #     message = ''
+                if balloon_value >= 100:
+                    message = ''
+                    follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2, timestamp)
+                    ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
+                    ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
+                else:
+                    message = ''
 
-                    rows.forEach(row => {
-                        const messageCell = row.cells[3];
-                        if (isHighValueFiltered) {
-                            const numberMatch = messageCell.innerHTML.match(/>(\\d+)</);
-                            if (messageCell.innerHTML.includes('color: red') && numberMatch && parseInt(numberMatch[1]) >= 100) {
-                                row.classList.remove('hidden');
-                            } else {
-                                row.classList.add('hidden');
-                            }
-                        } else {
-                            row.classList.remove('hidden');
-                        }
-                    });
 
-                    document.querySelectorAll('.filter-button')[1].innerText = isHighValueFiltered ? 'Show All Rows' : 'Show Only Red Rows with Value >= 100';
-                }
 
-                document.querySelectorAll('.column-toggle').forEach(checkbox => {
-                    checkbox.addEventListener('change', function() {
-                        const column = this.dataset.column;
-                        const isChecked = this.checked;
-                        const table = document.getElementById('dataTable');
-                        const rows = table.querySelectorAll('tr');
-                        
-                        rows.forEach(row => {
-                            if (isChecked) {
-                                row.cells[column].classList.remove('hidden');
-                            } else {
-                                row.cells[column].classList.add('hidden');
-                            }
-                        });
-                    });
-                });
 
-                document.querySelector('.following-toggle').addEventListener('change', function() {
-                    const isChecked = this.checked;
-                    const messages = document.querySelectorAll('.following-messages');
-                    
-                    messages.forEach(message => {
-                        if (isChecked) {
-                            message.classList.remove('hidden');
-                        } else {
-                            message.classList.add('hidden');
-                        }
-                    });
-                });
-            </script>
-        </body>
-        </html>
-        """)
 
-    print(f"저장되었습니다.")
 
-# 로그인 상태가 저장되어 있는지 확인하고 없으면 저장하도록 유도
-if not os.path.exists(storage_file):
-    save_login_state()
 
-# 데이터 추출
-extract_data()
+        # 각 셀에 데이터 추가 및 스타일 적용
+        ws.cell(row=idx, column=1, value=data['tag']).alignment = Alignment(horizontal='center')
+        timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
+        timestamp_cell.alignment = Alignment(horizontal='center')
+        if balloon_value >= 300:
+            timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-4}")
+            timestamp_cell.font = Font(color="6262ff", underline="single")
+        ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=5, value=balloon_value if balloon_value >= 1 else 0).alignment = Alignment(horizontal='center')
+        ws.cell(row=idx, column=6, value=follow_messages[0] if follow_messages else message)
+        ws.cell(row=idx, column=7, value=" | ".join(follow_messages[1:3]) if len(follow_messages) > 1 else "")
+        ws.cell(row=idx, column=8, value=accumulated_sum).alignment = Alignment(horizontal='center')
 
-# 모든 XML 파일에서 필요한 정보 추출 및 저장
+    # 열 너비 자동 조정 (최대 80으로 제한)
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = min((max_length + 2) * 1.2, 60)  # 최대 80으로 제한
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # 필터링
+    ws.auto_filter.ref = ws.dimensions
+    # 파일 저장
+    # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
+    # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', '뉴팔로우진행중2.xlsx')
+    wb.save(excel_file_path)
+
+    print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
+    print(f"Total Sum of balloon: {total_sum}")
+
+# 메인 실행 부분
+# if not os.path.exists(storage_file):
+#     save_login_state()
+
+# extract_data()
 process_all_xml_files()
