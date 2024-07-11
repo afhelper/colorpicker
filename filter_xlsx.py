@@ -4,19 +4,21 @@ from openpyxl.styles import Alignment
 from openpyxl.worksheet.hyperlink import Hyperlink
 
 # 사용자로부터 URL 입력받기
-# base_url = input("url 주소 입력: ")
-base_url = "1"
+base_url = input("url 주소 입력: ")
+# base_url = "1"
 # 엑셀 파일 읽기
-file_path = '/Users/air/Desktop/result/5337895개.xlsx'  # 원본 엑셀 파일 경로를 지정해주세요
+file_path = '/Users/air/Desktop/result/2860019개.xlsx'  # 원본 엑셀 파일 경로를 지정해주세요
+# file_path = input("경로명 입력 :")
 df = pd.read_excel(file_path)
 
 # 필터링 조건 리스트
 filter_conditions = [
-    (df['Message'].str.startswith('하') | df['Message'].str.contains('하|트|뚱', na=False), '하'),
-    (df['Message'].str.startswith('조') | df['Message'].str.contains('조|조플|유정|ㅇㅈ', na=False), '조'),
-    (df['Message'].str.startswith('천') | df['Message'].str.contains('이주|주미|이죽|ㅇㅈ|ㅊ', na=False), '천'),
+    (df['Message'].str.startswith('하') | df['Message'].str.endswith('하') | df['Message'].str.contains('트|뚱|ㅌㅇ|유진|하\+', na=False), '하'),
+    (df['Message'].str.startswith('조') | df['Message'].str.endswith('조') | df['Message'].str.contains('조플|유정|ㅇㅈ', na=False), '조'),
+    (df['Message'].str.startswith('천') | df['Message'].str.endswith('천')  | (df['Message'].str == 'ㅊ') | df['Message'].str.contains('이주|주미|이죽|ㅇㅈ', na=False), '천'),
+    (df['Message'].str.startswith('쟌') | df['Message'].str.endswith('쟌') | df['Message'].str.contains('지안|ㅈㅇ|쟌', na=False), '쟌'),
     (df['Message'].str.startswith('임') | df['Message'].str.contains('주연', na=False), '임'),
-    (df['Message'].str.startswith('쟌') | df['Message'].str.contains('지안|ㅈㅇ|쟌', na=False), '쟌')
+    # (df['Message'].str.startswith('은') | df['Message'].str.endswith('은') | df['Message'].str.contains('유화|은플|응뉴', na=False), '은')
 ]
 
 # 필터링 조건에 따라 파일을 생성하는 함수
@@ -34,7 +36,7 @@ def create_filtered_excel(filtered_df, label, base_url):
             if isinstance(timestamp, str):
                 h, m, s = map(int, timestamp.split(':'))
                 total_seconds = h * 3600 + m * 60 + s
-                hyperlink_url = f"{base_url}?change_second={total_seconds}"
+                hyperlink_url = f"{base_url}?change_second={total_seconds-3}"
                 cell.hyperlink = Hyperlink(ref=cell.coordinate, target=hyperlink_url)
                 cell.style = "Hyperlink"
 
