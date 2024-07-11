@@ -12,9 +12,11 @@ from openpyxl.worksheet.hyperlink import Hyperlink
 # 로그인 페이지 URL과 목표 페이지 URL
 login_url = 'https://login.afreecatv.com/afreeca/login.php?szFrom=full&request_uri=https%3A%2F%2Fwww.afreecatv.com%2F'
 url = input("url 주소 입력: ")
+# url = "https://vod.afreecatv.com/player/130141323"
 
 # 전역 변수 선언
 all_timestamp = []
+durations = []
 broadcast_title = ''
 # 파일 경로 설정
 desktop_path = os.path.expanduser("~/Desktop")
@@ -64,6 +66,7 @@ def save_login_state():
 
 def extract_data():
     global broadcast_title
+    global durations
     try:
         with sync_playwright() as p:
             browser = p.firefox.launch(headless=True)
@@ -210,6 +213,7 @@ def find_and_append_chat_messages(data, current_index, current_timestamp):
 
 
 def process_all_xml_files():
+    global durations
     all_extracted_data = []
     total_sum = 0
 
@@ -219,21 +223,44 @@ def process_all_xml_files():
             extracted_data, file_sum = extract_required_data_from_xml(file_path)
             total_sum += file_sum
             all_extracted_data.extend(extracted_data)
-    
+
+    #타임라인 원래 로직    
+    # b = all_timestamp
+    # c = []
+
+    # prev_value = 0
+
+    # for i in range(len(b)):
+    #     current_value = float(b[i])
+        
+    #     if i == 0:
+    #         c.append(float(current_value))
+    #     else:
+    #         if current_value < float(b[i - 1]):
+    #             prev_value = c[-1]
+    #         c.append(float(prev_value + current_value))
+    #타임라인 수정 로직
     b = all_timestamp
     c = []
+    # durations = [6086, 257, 1333, 891, 3458, 465, 4295, 703, 421, 14028]
 
     prev_value = 0
+    duration_index = 0
 
     for i in range(len(b)):
         current_value = float(b[i])
         
         if i == 0:
-            c.append(float(current_value))
+            c.append(current_value)
         else:
             if current_value < float(b[i - 1]):
-                prev_value = c[-1]
-            c.append(float(prev_value + current_value))
+                if duration_index < len(durations):
+                    prev_value += durations[duration_index]
+                    duration_index += 1
+            c.append(prev_value + current_value)
+
+
+
 
     # Excel 파일 생성 부분
     wb = Workbook()
@@ -269,7 +296,10 @@ def process_all_xml_files():
                     message = ''
         elif data['tag'] == 'vod_balloon':
             balloon_value = int(message)
+            accumulated_sum += balloon_value
             message = ''
+            ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
+            ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
 
 
         # 각 셀에 데이터 추가 및 스타일 적용
@@ -277,7 +307,7 @@ def process_all_xml_files():
         timestamp_cell = ws.cell(row=idx, column=2, value=format_timestamp(timestamp))
         timestamp_cell.alignment = Alignment(horizontal='center')
         if balloon_value >= 300:
-            timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-4}")
+            timestamp_cell.hyperlink = Hyperlink(ref=f"B{idx}", target=f"{url}?change_second={round(timestamp)-3}")
             timestamp_cell.font = Font(color="6262ff", underline="single")
         ws.cell(row=idx, column=3, value=data['nickname']).alignment = Alignment(horizontal='center')
         ws.cell(row=idx, column=4, value=data['user_id']).alignment = Alignment(horizontal='center')
@@ -310,7 +340,7 @@ def process_all_xml_files():
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
-# 메인 실행 부분
+#메인 실행 부분
 if not os.path.exists(storage_file):
     save_login_state()
 
