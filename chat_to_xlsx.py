@@ -149,7 +149,7 @@ def extract_required_data_from_xml(file_path):
     total_sum = 0
     
     for element in root:
-        if element.tag in ['chat', 'balloon', 'adballoon', 'ogq']:
+        if element.tag in ['chat', 'balloon', 'adballoon', 'ogq', 'vod_balloon']:
             nickname = ''
             user_id = ''
             message = ''
@@ -160,7 +160,7 @@ def extract_required_data_from_xml(file_path):
                 nickname = element.find('sn').text if element.find('sn') is not None else ''
                 message = element.find('m').text if element.find('m') is not None else ''
                 timestamp = element.find('t').text if element.find('t') is not None else ''
-            elif element.tag in ['balloon', 'adballoon']:
+            elif element.tag in ['balloon', 'adballoon', 'vod_balloon']:
                 nickname = element.find('n').text if element.find('n') is not None else ''
                 user_id = element.find('u').text if element.find('u') is not None else ''
                 message = element.find('c').text if element.find('c') is not None else ''
@@ -189,68 +189,6 @@ def extract_required_data_from_xml(file_path):
     
     return extracted_data, total_sum
 
-# def find_and_append_chat_messages(data, current_index):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
-#             chat_messages.append(data[i]['message'])
-#         if len(chat_messages) == 3:
-#             break
-#     return chat_messages
-
-# def find_and_append_chat_messages(data, current_index, current_timestamp):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         next_timestamp = float(data[i]['timestamp'])
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id and next_timestamp <= current_timestamp + 60:
-#             chat_messages.append(data[i]['message'])
-#         if len(chat_messages) == 3:
-#             break
-#     return chat_messages
-
-# def find_and_append_chat_messages(data, current_index, current_timestamp):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         next_timestamp = float(data[i]['timestamp'])
-#         # 1분 (60초) 이내의 메시지만 포함
-#         if next_timestamp > current_timestamp + 60:
-#             break
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
-#             chat_messages.append(data[i]['message'])
-#         if len(chat_messages) == 3:
-#             break
-#     return chat_messages if chat_messages else ['']
-
-# def find_and_append_chat_messages(data, current_index, current_timestamp):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         next_timestamp = float(data[i]['timestamp'])
-#         # 1분 (60초) 이내의 메시지만 포함
-#         if next_timestamp > current_timestamp + 60:
-#             break
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
-#             chat_messages.append(data[i]['message'])
-#             if len(chat_messages) == 3:
-#                 break
-#     return chat_messages if chat_messages else ['']
-
-# def find_and_append_chat_messages(data, current_index, current_timestamp):
-#     user_id = data[current_index]['user_id']
-#     chat_messages = []
-#     for i in range(current_index + 1, len(data)):
-#         next_timestamp = float(data[i]['timestamp'])
-#         # 1분 (60초) 이내의 메시지만 포함
-#         if next_timestamp > current_timestamp + 60:
-#             break
-#         if data[i]['tag'] == 'chat' and data[i]['user_id'] == user_id:
-#             chat_messages.append(data[i]['message'])
-#             if len(chat_messages) == 3:
-#                 break
-#     return chat_messages if chat_messages else ['']
 
 #클로드타임
 def find_and_append_chat_messages(data, current_index, current_timestamp):
@@ -322,14 +260,6 @@ def process_all_xml_files():
             if message and message.isdigit():
                 balloon_value = int(message)
                 accumulated_sum += balloon_value
-
-                # if balloon_value >= 100:
-                #     message = ''
-                #     follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2)
-                #     ws.cell(row=idx, column=5).fill = PatternFill(start_color="eaffe6", end_color="FFCCCB", fill_type="solid")
-                #     ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
-                # else:
-                #     message = ''
                 if balloon_value >= 100:
                     message = ''
                     follow_messages = find_and_append_chat_messages(all_extracted_data, idx-2, timestamp)
@@ -337,11 +267,9 @@ def process_all_xml_files():
                     ws.cell(row=idx, column=6).fill = PatternFill(start_color="ffe9f3", end_color="FFCCCB", fill_type="solid")
                 else:
                     message = ''
-
-
-
-
-
+        elif data['tag'] == 'vod_balloon':
+            balloon_value = int(message)
+            message = ''
 
 
         # 각 셀에 데이터 추가 및 스타일 적용
@@ -375,16 +303,16 @@ def process_all_xml_files():
     ws.auto_filter.ref = ws.dimensions
     # 파일 저장
     # excel_file_path = os.path.join(desktop_path, 'result', f'{broadcast_title.replace("/","")}.xlsx')
-    # excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
-    excel_file_path = os.path.join(desktop_path, 'result', '뉴팔로우진행중6.xlsx')
+    excel_file_path = os.path.join(desktop_path, 'result', f'{total_sum}개.xlsx')
+    # excel_file_path = os.path.join(desktop_path, 'result', '뉴팔로우진행중8.xlsx')
     wb.save(excel_file_path)
 
     print(f"Excel 파일이 저장되었습니다: {excel_file_path}")
     print(f"Total Sum of balloon: {total_sum}")
 
 # 메인 실행 부분
-# if not os.path.exists(storage_file):
-#     save_login_state()
+if not os.path.exists(storage_file):
+    save_login_state()
 
-# extract_data()
+extract_data()
 process_all_xml_files()
