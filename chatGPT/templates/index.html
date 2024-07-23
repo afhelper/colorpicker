@@ -36,7 +36,8 @@
             z-index: 1000;
         }
 
-        .text-left {
+        .text-left,
+        .text-right {
             font-size: large;
         }
 
@@ -105,7 +106,7 @@
                 <!-- Chat messages will be inserted here -->
             </div>
             <form id="chat-form" class="d-flex fixed-bottom p-3">
-                <textarea id="user-input" class="form-control mr-2 transparent-textarea no-resize"
+                <textarea id="user-input" class="form-control transparent-textarea no-resize"
                     placeholder="Type your message here..." rows="1"></textarea>
                 <button type="submit" class="btn btn-outline-light">run</button>
                 <button type="button" id="clear-btn" class="btn btn-outline-light ml-2">del</button>
@@ -115,7 +116,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script> -->
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script>
+    <!-- <script>
         document.addEventListener("DOMContentLoaded", function () {
             const form = document.getElementById('chat-form');
             const textarea = document.getElementById('user-input');
@@ -136,8 +137,11 @@
                 const message = textarea.value.trim();
                 if (!message) return;
 
-                // Clear the textarea field immediately
-                textarea.value = '';
+                // Clear the textarea field after a very short delay
+                setTimeout(() => {
+                    textarea.value = '';
+                    textarea.style.height = 'auto';
+                }, 0);
 
                 // Add user message to chatbox
                 const userMessage = document.createElement('div');
@@ -222,7 +226,272 @@
                 });
             });
         });
+    </script> -->
+
+
+
+
+
+
+
+
+    <!--     
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById('chat-form');
+            const textarea = document.getElementById('user-input');
+            const chatbox = document.getElementById('chatbox');
+            const clearBtn = document.getElementById('clear-btn');
+
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.metaKey) {  // Command (Meta) + Enter
+                    e.preventDefault();  // Prevent the default action
+                    form.dispatchEvent(new Event('submit'));  // Manually trigger the form submission
+                }
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const message = textarea.value.trim();
+                if (!message) return;
+
+                // Clear the textarea field after a very short delay
+                setTimeout(() => {
+                    textarea.value = '';
+                    textarea.style.height = 'auto';
+                }, 0);
+
+                // Add user message to chatbox
+                const userMessage = document.createElement('div');
+                userMessage.className = 'text-right text-white';
+                userMessage.innerText = message;
+                chatbox.appendChild(userMessage);
+
+                // Add horizontal line between user message and bot response
+                const hrElement = document.createElement('hr');
+                hrElement.className = 'bg-light';
+                chatbox.appendChild(hrElement);
+
+                // Add loading message
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'text-left text-white';
+                loadingMessage.innerText = '로딩 중...'; // Loading message
+                chatbox.appendChild(loadingMessage);
+
+                // Scroll chatbox to the bottom
+                chatbox.scrollTop = chatbox.scrollHeight;
+
+                // Send message to server
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message }),
+                });
+
+                const data = await response.json();
+
+                // Remove loading message
+                chatbox.removeChild(loadingMessage);
+
+                const botMessage = document.createElement('div');
+                botMessage.className = 'text-left text-white';
+                botMessage.innerHTML = marked.parse(data.response); // Use marked.parse to render Markdown
+
+                // Add copy button for code blocks
+                botMessage.querySelectorAll('pre code').forEach((codeBlock) => {
+                    const codeWrapper = document.createElement('div');
+                    codeWrapper.className = 'code-block';
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn btn btn-sm btn-outline-secondary';
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                    copyBtn.addEventListener('click', () => {
+                        navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+                            const notification = document.createElement('div');
+                            notification.className = 'copy-notification';
+                            notification.innerText = 'Copied!';
+                            document.body.appendChild(notification);
+                            setTimeout(() => {
+                                document.body.removeChild(notification);
+                            }, 2000); // 2초 후에 알림 제거
+                        });
+                    });
+                    codeWrapper.appendChild(copyBtn);
+                    codeBlock.parentNode.insertBefore(codeWrapper, codeBlock);
+                    codeWrapper.appendChild(codeBlock);
+                });
+
+                chatbox.appendChild(botMessage);
+
+                // Scroll chatbox to the bottom
+                // chatbox.scrollTop = chatbox.scrollHeight;
+            });
+
+            clearBtn.addEventListener('click', async () => {
+                // Clear chatbox in the UI
+                chatbox.innerHTML = '';
+
+                // Clear recent_messages on the server
+                await fetch('/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+            });
+        });
+    </script> -->
+
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById('chat-form');
+            const textarea = document.getElementById('user-input');
+            const chatbox = document.getElementById('chatbox');
+            const clearBtn = document.getElementById('clear-btn');
+
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.metaKey) {  // Command (Meta) + Enter
+                    e.preventDefault();  // Prevent the default action
+                    form.dispatchEvent(new Event('submit'));  // Manually trigger the form submission
+                }
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const message = textarea.value.trim();
+                if (!message) return;
+
+                // Clear the textarea field after a very short delay
+                setTimeout(() => {
+                    textarea.value = '';
+                    textarea.style.height = 'auto';
+                }, 0);
+
+                // Add user message to chatbox
+                const userMessage = document.createElement('div');
+                userMessage.className = 'text-right text-white';
+                userMessage.innerText = message;
+                chatbox.appendChild(userMessage);
+
+                // Add horizontal line between user message and bot response
+                const hrElement = document.createElement('hr');
+                hrElement.className = 'bg-light';
+                chatbox.appendChild(hrElement);
+
+                // Add loading message
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'text-left text-white';
+                loadingMessage.innerText = '로딩 중...'; // Loading message
+                chatbox.appendChild(loadingMessage);
+
+                // Scroll chatbox to the bottom
+                chatbox.scrollTop = chatbox.scrollHeight;
+
+                // Send message to server
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message }),
+                });
+
+                const data = await response.json();
+
+                // Remove loading message
+                chatbox.removeChild(loadingMessage);
+
+                const botMessage = document.createElement('div');
+                botMessage.className = 'text-left text-white';
+                botMessage.innerHTML = marked.parse(data.response); // Use marked.parse to render Markdown
+
+                // Add copy button for code blocks
+                botMessage.querySelectorAll('pre code').forEach((codeBlock) => {
+                    const codeWrapper = document.createElement('div');
+                    codeWrapper.className = 'code-block';
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'copy-btn btn btn-sm btn-outline-secondary';
+                    copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+                    copyBtn.addEventListener('click', () => {
+                        if (navigator.clipboard) {
+                            navigator.clipboard.writeText(codeBlock.textContent).then(() => {
+                                showNotification('Copied!');
+                            }).catch(err => {
+                                fallbackCopyTextToClipboard(codeBlock.textContent);
+                            });
+                        } else {
+                            fallbackCopyTextToClipboard(codeBlock.textContent);
+                        }
+                    });
+                    codeWrapper.appendChild(copyBtn);
+                    codeBlock.parentNode.insertBefore(codeWrapper, codeBlock);
+                    codeWrapper.appendChild(codeBlock);
+                });
+
+                chatbox.appendChild(botMessage);
+
+                // Scroll chatbox to the bottom
+                chatbox.scrollTop = chatbox.scrollHeight;
+            });
+
+            clearBtn.addEventListener('click', async () => {
+                // Clear chatbox in the UI
+                chatbox.innerHTML = '';
+
+                // Clear recent_messages on the server
+                await fetch('/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+            });
+
+            function showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'copy-notification';
+                notification.innerText = message;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 2000); // 2초 후에 알림 제거
+            }
+
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';  // Avoid scrolling to bottom
+                textArea.style.top = '0';
+                textArea.style.left = '0';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                try {
+                    document.execCommand('copy');
+                    showNotification('Copied!');
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                }
+
+                document.body.removeChild(textArea);
+            }
+        });
     </script>
+
+
+
+
+
+
+
+
+
+
 </body>
 
 </html>

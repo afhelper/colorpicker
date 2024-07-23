@@ -18,6 +18,13 @@ recent_messages = []
 def home():
     return render_template('index.html')
 
+@app.route('/aid')
+def get_key():
+    aid = request.args.get('aid')
+    with open('/home/ubuntu/bot/app_id.txt', 'w', encoding='utf-8') as f:
+        f.write(aid)
+    return aid
+
 @app.route('/clear', methods=['POST'])
 def clear():
     global recent_messages  # 전역 변수 선언
@@ -52,4 +59,5 @@ def chat():
     return jsonify({'response': response_text})
 
 if __name__ == '__main__':
+    # app.run(host='0.0.0.0', port=5001, ssl_context='adhoc')
     app.run(host='0.0.0.0', port=5001)
