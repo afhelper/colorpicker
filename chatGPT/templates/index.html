@@ -10,7 +10,8 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .code-block {
-            background-color: #f8f9fa;
+            background-color: #141414;
+            color: white;
             padding: 10px;
             border-radius: 5px;
             position: relative;
@@ -34,20 +35,60 @@
             border-radius: 5px;
             z-index: 1000;
         }
+
+        .text-left {
+            font-size: large;
+        }
+
+        .transparent-textarea {
+            background-color: transparent;
+            /* 배경을 투명하게 설정 */
+            border: none;
+            /* 테두리를 없앰 */
+            box-shadow: none;
+            /* 그림자 없앰 */
+            /* color: #000; */
+            color: white;
+            /* 텍스트 색상 설정 */
+            border-color: white;
+        }
+
+        .transparent-textarea:focus {
+            background-color: transparent;
+            color: white;
+            outline: none;
+            box-shadow: none;
+            border-color: white;
+            /* 포커스 시 아웃라인 제거 */
+        }
+
+        textarea {
+            color: white;
+        }
+
+        .no-resize {
+            resize: none;
+            overflow: hidden;
+        }
+
+        .btn-outline-secondary {
+            color: #ffffff;
+            border-color: #ffffff;
+        }
     </style>
 </head>
 
-<body class="bg-light d-flex justify-content-center align-items-center vh-100">
-    <div class="card w-100 h-100">
+<body class="bg-dark d-flex justify-content-center align-items-center vh-100">
+    <div class="bg-dark card w-100 h-100">
         <div class="card-body d-flex flex-column">
             <div id="chatbox" class="flex-grow-1 overflow-auto mb-3">
                 <!-- Chat messages will be inserted here -->
             </div>
             <form id="chat-form" class="d-flex">
-                <textarea id="user-input" class="form-control mr-2" placeholder="Type your message here..."
-                    rows="1"></textarea>
-                <button type="submit" class="btn btn-primary">Send</button>
-                <button type="button" id="clear-btn" class="btn btn-outline-success ml-2">🧹</button>
+                <textarea id="user-input" class="form-control mr-2 transparent-textarea no-resize"
+                    placeholder="Type your message here..." rows="1"></textarea>
+                <button type="submit" class="btn btn-outline-light">run</button>
+                <button type="button" id="clear-btn" class="btn btn-outline-light ml-2">del</button>
             </form>
         </div>
     </div>
@@ -78,7 +119,7 @@
 
                 // Add user message to chatbox
                 const userMessage = document.createElement('div');
-                userMessage.className = 'text-right';
+                userMessage.className = 'text-right text-white';
                 userMessage.innerText = message;
                 chatbox.appendChild(userMessage);
 
@@ -93,7 +134,7 @@
 
                 const data = await response.json();
                 const botMessage = document.createElement('div');
-                botMessage.className = 'text-left text-primary';
+                botMessage.className = 'text-left text-white';
                 botMessage.innerHTML = marked.parse(data.response); // Use marked.parse to render Markdown
 
                 // Add copy button for code blocks
