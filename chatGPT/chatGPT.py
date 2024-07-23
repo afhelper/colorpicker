@@ -30,7 +30,7 @@ def chat():
 
     data = request.json
     user_message = data.get('message', '')
-
+    print(f'{user_message}\n')
     # 새 메시지 추가
     recent_messages.append({'role': 'user', 'content': user_message})
 
@@ -45,11 +45,11 @@ def chat():
     )
 
     response_text = completion.choices[0].message.content
-
+    print(response_text)
     # 응답 메시지 추가
     recent_messages.append({'role': 'assistant', 'content': response_text})
 
     return jsonify({'response': response_text})
 
 if __name__ == '__main__':
-    app.run(port=5001,debug=True)
+    app.run(host='0.0.0.0', port=5001)
