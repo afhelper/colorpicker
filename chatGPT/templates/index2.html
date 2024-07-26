@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        @media (min-width: 768px) {
+            .sidebar {
+                display: block !important;
+            }
+        }
+
+        #message-input {
+            height: 42px;
+        }
+
+        /* 코드 블록 스타일 */
+        pre {
+            background-color: #000;
+            /* 배경색 검정 */
+            color: #fff;
+            /* 글씨색 흰색 */
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+
+        /* code {
+            background-color: #000;
+            color: #fff;
+            padding: 2px 4px;
+            border-radius: 3px;
+        } */
+
+
+        pre code {
+            color: white;
+        }
+
+        code:not(pre code) {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+
+
+        .copy-button {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #9effff;
+        }
+
+        .copy-button svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .code-container {
+            position: relative;
+            display: block;
+        }
+
+        /* 전체 스크롤바 숨기기 */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        html {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+            height: -webkit-fill-available;
+
+
+        }
+
+        /* 사이드바가 컨텐츠 위에 표시되도록 z-index 설정 */
+        .sidebar {
+            z-index: 10;
+        }
+
+
+        body {
+            min-height: 100vh;
+
+            @supports (-webkit-appearance:none) and (stroke-color: transparent) {
+                min-height: -webkit-fill-available;
+            }
+        }
+
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+
+
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col h-screen">
+    <!-- 네비게이션 바 -->
+    <nav class="bg-blue-600 text-white p-4 flex justify-between items-center">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">ChatGPT</h1>
+            <button id="sidebar-toggle" class="md:hidden">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7">
+                    </path>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <div class="flex flex-grow overflow-hidden">
+        <!-- 사이드바 -->
+        <div id="sidebar" class="sidebar hidden md:block bg-gray-200 w-64 p-4 overflow-y-auto">
+            <ul>
+                <li class="mb-4"><a href="#" class="block p-2 rounded hover:bg-gray-300">Home</a></li>
+                <li class="mb-4"><a href="#" class="block p-2 rounded hover:bg-gray-300">About</a></li>
+                <li class="mb-4"><a href="#" class="block p-2 rounded hover:bg-gray-300">Contact</a></li>
+            </ul>
+        </div>
+
+        <!-- 채팅 영역 -->
+        <div class="flex-grow container mx-auto p-2 flex flex-col">
+            <div id="chat-container" class="flex-grow bg-white shadow-md rounded-lg p-4 overflow-y-auto">
+
+            </div>
+
+            <!-- 입력 영역 -->
+            <div class="mt-2 relative flex items-center">
+                <button class="absolute left-3 text-gray-500 hover:text-blue-500 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                </button>
+
+
+                <textarea id="message-input" placeholder="메시지를 입력하세요..."
+                    class="w-full border px-4 py-2 pl-12 pr-24 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden rounded-lg"></textarea>
+
+
+
+
+
+                <div class="absolute right-2 flex">
+                    <button id="send-button" class="text-gray-500 hover:text-blue-500 focus:outline-none mr-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                    <button id="clear-button" class="text-gray-500 hover:text-red-500 focus:outline-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="loading-spinner"
+        class="hidden fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div class="loader"></div>
+    </div>
+
+
+
+
+
+    <script>
+        document.getElementById('sidebar-toggle').addEventListener('click', function () {
+            var sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        });
+
+        document.getElementById('send-button').addEventListener('click', function () {
+            var messageInput = document.getElementById('message-input');
+            var message = messageInput.value;
+            if (message.trim() !== '') {
+
+                // 로딩 스피너 표시
+                document.getElementById('loading-spinner').classList.remove('hidden');
+
+
+                // 입력 필드 비우기
+                setTimeout(() => {
+                    messageInput.value = '';
+                    // messageInput.style.height = 'auto';
+                }, 0);
+
+
+
+
+                var chatContainer = document.getElementById('chat-container');
+                var userMessageDiv = document.createElement('div');
+                userMessageDiv.classList.add('mb-4', 'text-right');
+                userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + message + '</div>';
+                chatContainer.appendChild(userMessageDiv);
+
+                userMessageDiv.scrollIntoView({
+                    behavior: 'smooth', // 부드러운 스크롤
+                    block: 'start'
+                });
+
+
+                // 백엔드로 메시지 전송
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ message: message })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+
+                        // 로딩 스피너 숨기기
+                        document.getElementById('loading-spinner').classList.add('hidden');
+
+
+
+                        // 채팅 영역에 응답 메시지 추가
+
+                        var botMessageDiv = document.createElement('div');
+                        botMessageDiv.classList.add('mb-4');
+                        botMessageDiv.classList.add('text-lg');
+                        botMessageDiv.innerHTML = marked.parse(data.response);
+                        chatContainer.appendChild(botMessageDiv);
+
+                        userMessageDiv.scrollIntoView({
+                            behavior: 'smooth', // 부드러운 스크롤
+                            block: 'start'
+                        });
+
+                        // 복사 버튼 추가
+                        var preElements = botMessageDiv.getElementsByTagName('pre');
+                        for (var i = 0; i < preElements.length; i++) {
+                            var codeContainer = document.createElement('div');
+                            codeContainer.classList.add('code-container');
+                            preElements[i].parentNode.insertBefore(codeContainer, preElements[i]);
+                            codeContainer.appendChild(preElements[i]);
+
+                            var copyButton = document.createElement('button');
+                            copyButton.classList.add('copy-button');
+                            copyButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M384 336l-192 0c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l140.1 0L400 115.9 400 320c0 8.8-7.2 16-16 16zM192 384l192 0c35.3 0 64-28.7 64-64l0-204.1c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1L192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-32-48 0 0 32c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l32 0 0-48-32 0z"/></svg>'
+                            codeContainer.appendChild(copyButton);
+
+
+
+
+
+
+
+                            // copyButton.addEventListener('click', function () {
+                            //     var codeContent = this.previousSibling.textContent;
+                            //     navigator.clipboard.writeText(codeContent).then(() => {
+                            //         var alertDiv = document.createElement('div');
+                            //         alertDiv.textContent = 'Copied!';
+                            //         alertDiv.style.position = 'fixed';
+                            //         alertDiv.style.top = '50%';
+                            //         alertDiv.style.left = '50%';
+                            //         alertDiv.style.transform = 'translate(-50%, -50%)';
+                            //         alertDiv.style.backgroundColor = 'white';
+                            //         alertDiv.style.color = 'rgb(0, 0, 0)';
+                            //         alertDiv.style.padding = '10px';
+                            //         alertDiv.style.borderRadius = '5px';
+                            //         alertDiv.style.zIndex = '1000';
+
+                            //         document.body.appendChild(alertDiv);
+
+                            //         setTimeout(() => {
+                            //             document.body.removeChild(alertDiv);
+                            //         }, 2000);
+                            //     });
+                            // });
+
+
+                            copyButton.addEventListener('click', function () {
+                                var codeContent = this.previousSibling.textContent;
+                                navigator.clipboard.writeText(codeContent).then(() => {
+                                    var alertDiv = document.createElement('div');
+                                    alertDiv.textContent = 'Copied!';
+
+                                    // 버튼의 위치를 기준으로 알림창 위치 설정
+                                    var buttonRect = this.getBoundingClientRect();
+                                    alertDiv.style.position = 'fixed';
+                                    alertDiv.style.top = (buttonRect.top - 4) + 'px';
+                                    alertDiv.style.left = (buttonRect.left - 75) + 'px'; // 버튼 왼쪽에 위치하도록 조정
+
+                                    alertDiv.style.backgroundColor = 'white';
+                                    alertDiv.style.color = 'rgb(0, 0, 0)';
+                                    alertDiv.style.padding = '5px 10px';
+                                    alertDiv.style.borderRadius = '5px';
+                                    alertDiv.style.zIndex = '1000';
+                                    alertDiv.style.fontSize = '14px';
+                                    alertDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+
+                                    document.body.appendChild(alertDiv);
+
+                                    setTimeout(() => {
+                                        document.body.removeChild(alertDiv);
+                                    }, 1000);
+                                });
+                            });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                        }
+
+                        // chatContainer.scrollTop = chatContainer.scrollHeight;
+
+                    })
+                    //             .catch(error => console.error('Error:', error));
+                    //     }
+                    // });
+                    .catch(error => {
+                        // console.error('Error:', error);
+                        alert(error);
+                        // 로딩 스피너 숨기기
+                        document.getElementById('loading-spinner').classList.add('hidden');
+                    });
+            }
+        });
+
+
+
+        document.getElementById('clear-button').addEventListener('click', function () {
+            // 백엔드로 요청 전송
+            fetch('/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // 채팅 영역 비우기
+                        var chatContainer = document.getElementById('chat-container');
+                        chatContainer.innerHTML = '';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('message-input').addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && event.metaKey) {
+                event.preventDefault();
+                document.getElementById('send-button').click();
+            }
+        });
+    </script>
+</body>
+
+</html>
