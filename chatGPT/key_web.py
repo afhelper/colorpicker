@@ -214,6 +214,7 @@ def chat():
     )
 
     response_text = completion.choices[0].message.content
+    tokens_used = completion.usage.total_tokens
 #    print(response_text)
     # 응답 메시지 추가
     recent_messages.pop()
@@ -223,9 +224,9 @@ def chat():
     img_type = ''
     image_binary = ''
     if use_model == 'gpt-4o-mini':
-        use_model_html = f'<span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-transparent dark:text-green-400 border border-green-400">{use_model}</span>'
+        use_model_html = f'<span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-transparent dark:text-green-400 border border-green-400">{use_model}</span><span class="text-gray-400 text-xs">{tokens_used} tokens</span>'
     else :
-        use_model_html = f'<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-transparent dark:text-red-400 border border-red-400">{use_model}</span>'
+        use_model_html = f'<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-transparent dark:text-red-400 border border-red-400">{use_model}</span><span class="text-gray-400 text-xs">{tokens_used} tokens</span>'
     return jsonify({'response': f'{use_model_html}<br>{response_text}'})
 
 
