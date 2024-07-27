@@ -5,6 +5,10 @@ import mysql.connector
 from mysql.connector import Error
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
+
+img_type = ''
+image_binary = ''
 
 with open('/home/ubuntu/bot/config.json') as config_file:
     config = json.load(config_file)
@@ -71,6 +75,32 @@ def get_chat_from_db():
         if connection is not None and connection.is_connected():
             cursor.close()
             connection.close()
+
+
+
+
+@app.route('/upload', methods=['POST'])
+def upload_image():
+    global img_type
+    global image_binary
+    data = request.json
+    if 'image' not in data:
+        return jsonify({'error': '이미지가 없습니다'}), 400
+    
+    # Base64 데이터에서 실제 이미지 데이터 추출
+    img_type = data['image'].split(',')[0]
+    # image_data = data['image'].split(',')[1]
+    image_binary = data['image'].split(',')[1]
+    # image_data = data['image']
+    # Base64 디코딩
+    # image_binary = base64.b64decode(image_data)
+    
+    # 여기에서 이미지 저장 또는 처리 로직 구현
+    
+    return jsonify({'message': f'{img_type}'}), 200
+
+
+
 
 
 @app.route('/get_answer/<int:seq>', methods=['GET'])
@@ -149,19 +179,27 @@ def clear():
 @app.route('/chat', methods=['POST'])
 def chat():
     global recent_messages  # 전역 변수 선언
+    global img_type
+    global image_binary
 
     data = request.json
     user_message = data.get('message', '')
+    if image_binary == '':
+        use_model = 'gpt-4o-mini'
+        recent_messages.append({'role': 'user', 'content': user_message})
+    else:
+        use_model = 'gpt-4o'
+        recent_messages.append({"role": "user","content": [{"type": "text","text": f"{user_message}"},{"type": "image_url","image_url": {"url": f"{img_type},{image_binary}"}}]})
 #    print(f'{user_message}\n')
     # 새 메시지 추가
-    recent_messages.append({'role': 'user', 'content': user_message})
+    # recent_messages.append({'role': 'user', 'content': user_message})
 
     # 메시지 개수 제한 (최근 10개만 유지)
     recent_messages = recent_messages[-10:]
 
     # API 호출
     completion = client.chat.completions.create(
-        model='gpt-4o-mini',
+        model=use_model,
         messages=recent_messages,
         max_tokens=2000
     )
@@ -169,8 +207,12 @@ def chat():
     response_text = completion.choices[0].message.content
 #    print(response_text)
     # 응답 메시지 추가
+    recent_messages.pop()
+    recent_messages.append({'role': 'user', 'content': user_message})
     recent_messages.append({'role': 'assistant', 'content': response_text})
     insert_chat(user_message, response_text)
+    img_type = ''
+    image_binary = ''
     return jsonify({'response': response_text})
 
 
