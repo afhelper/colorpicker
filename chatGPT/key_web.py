@@ -184,15 +184,24 @@ def chat():
 
     data = request.json
     user_message = data.get('message', '')
+
+
     if image_binary == '':
-        use_model = 'gpt-4o-mini'
+        if user_message.startswith('@'):
+            use_model = 'gpt-4o'
+        else:
+            use_model = 'gpt-4o-mini'
         recent_messages.append({'role': 'user', 'content': user_message})
     else:
         use_model = 'gpt-4o'
-        recent_messages.append({"role": "user","content": [{"type": "text","text": f"{user_message}"},{"type": "image_url","image_url": {"url": f"{img_type},{image_binary}"}}]})
-#    print(f'{user_message}\n')
-    # 새 메시지 추가
-    # recent_messages.append({'role': 'user', 'content': user_message})
+        recent_messages.append({
+            "role": "user",
+            "content": [
+                {"type": "text", "text": user_message},
+                {"type": "image_url", "image_url": {"url": f"{img_type},{image_binary}"}}
+            ]
+        })
+
 
     # 메시지 개수 제한 (최근 10개만 유지)
     recent_messages = recent_messages[-10:]
@@ -213,7 +222,11 @@ def chat():
     insert_chat(user_message, response_text)
     img_type = ''
     image_binary = ''
-    return jsonify({'response': response_text})
+    if use_model == 'gpt-4o-mini':
+        use_model_html = f'<span class="bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-transparent dark:text-green-400 border border-green-400">{use_model}</span>'
+    else :
+        use_model_html = f'<span class="bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-transparent dark:text-red-400 border border-red-400">{use_model}</span>'
+    return jsonify({'response': f'{use_model_html}<br>{response_text}'})
 
 
 
