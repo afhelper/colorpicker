@@ -13,11 +13,20 @@
         @media (min-width: 768px) {
             .sidebar {
                 display: block !important;
+                width: 300px;
+                flex-shrink: 0;
             }
         }
 
+        .sidebar {
+            width: 300px;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
         #message-input {
-            height: 42px;
+            height: 49px;
+            color: white;
         }
 
         /* 코드 블록 스타일 */
@@ -31,12 +40,7 @@
             overflow: auto;
         }
 
-        /* code {
-            background-color: #000;
-            color: #fff;
-            padding: 2px 4px;
-            border-radius: 3px;
-        } */
+
 
 
         pre code {
@@ -44,7 +48,7 @@
         }
 
         code:not(pre code) {
-            color: #3b82f6;
+            color: #c1ffe2;
             font-weight: bold;
         }
 
@@ -76,29 +80,18 @@
             display: none;
         }
 
-        html {
-            -ms-overflow-style: none;
-            /* IE and Edge */
-            scrollbar-width: none;
-            /* Firefox */
-            height: -webkit-fill-available;
 
 
-        }
 
-        /* 사이드바가 컨텐츠 위에 표시되도록 z-index 설정 */
-        .sidebar {
-            z-index: 10;
+        .h-screen {
+            height: 100vh;
+            /* 기본적으로 100vh 사용 */
+            height: 100dvh !important;
+            /* dvh 지원 브라우저에서는 dvh 사용 */
+            /* touch-action: manipulation; */
         }
 
 
-        body {
-            min-height: 100vh;
-
-            @supports (-webkit-appearance:none) and (stroke-color: transparent) {
-                min-height: -webkit-fill-available;
-            }
-        }
 
 
         .loader {
@@ -121,14 +114,70 @@
                 transform: rotate(360deg);
             }
         }
+
+        a {
+            color: #74a9ff !important;
+            font-weight: bold;
+        }
+
+
+        .dkmd {
+            background-color: #212121;
+        }
+
+        .dkmd2 {
+            background-color: #111111;
+        }
+
+        .dkmd3 {
+            background-color: #2f2f2f;
+        }
+
+        /* 헤딩 태그 스타일 복원 및 Tailwind 초기화 덮어쓰기 */
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-weight: bold !important;
+            line-height: 1.2 !important;
+            margin-top: 1em !important;
+            margin-bottom: 0.5em !important;
+        }
+
+        h1 {
+            font-size: 2.25em !important;
+        }
+
+        h2 {
+            font-size: 1.75em !important;
+        }
+
+        h3 {
+            font-size: 1.5em !important;
+        }
+
+        h4 {
+            font-size: 1.25em !important;
+        }
+
+        h5 {
+            font-size: 1.1em !important;
+        }
+
+        h6 {
+            font-size: 1em !important;
+        }
     </style>
 </head>
 
-<body class="bg-gray-100 flex flex-col h-screen">
+<body class="dkmd2 flex flex-col h-screen">
     <!-- 네비게이션 바 -->
-    <nav class="bg-blue-600 text-white p-4 flex justify-between items-center">
-        <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">ChatGPT</h1>
+    <nav class="dkmd2 text-white p-2 flex justify-between items-center">
+        <div class="container flex justify-between items-center">
+            <!-- <div class="container mx-auto flex justify-between items-center"> -->
+            <div class="text-2xl font-bold">ChatGPT</div>
             <button id="sidebar-toggle" class="md:hidden">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
@@ -141,23 +190,38 @@
 
     <div class="flex flex-grow overflow-hidden">
         <!-- 사이드바 -->
-        <div id="sidebar" class="sidebar hidden md:block bg-gray-200 w-64 p-4 overflow-y-auto">
+        <!-- <div id="sidebar" class="sidebar hidden md:block bg-gray-200 w-64 p-4 overflow-y-auto"> -->
+
+        <!-- <div id="sidebar" class="sidebar hidden md:block bg-gray-200 w-64 p-4">
             <ul>
                 <li class="mb-4"><a href="#" class="block p-2 rounded hover:bg-gray-300">Home</a></li>
                 <li class="mb-4"><a href="#" class="block p-2 rounded hover:bg-gray-300">About</a></li>
                 <li class="mb-4"><a href="#" class="block p-2 rounded hover:bg-gray-300">Contact</a></li>
             </ul>
+        </div> -->
+
+        <!-- <div id="sidebar" class="sidebar hidden md:block bg-gray-200 w-1/4 p-4 overflow-y-scroll"> -->
+        <div id="sidebar" class="sidebar hidden dkmd2 p-4 overflow-y-scroll">
+            <ul id="recent-questions-list">
+                <!-- 최근 질문 목록이 여기 표시됩니다. -->
+            </ul>
         </div>
 
+
+
+
+
+
+
         <!-- 채팅 영역 -->
-        <div class="flex-grow container mx-auto p-2 flex flex-col">
-            <div id="chat-container" class="flex-grow bg-white shadow-md rounded-lg p-4 overflow-y-auto">
+        <div class="flex-grow container mx-auto p-2 flex flex-col dkmd2">
+            <div id="chat-container" class="flex-grow dkmd shadow-md rounded-lg p-4 overflow-y-auto">
 
             </div>
 
             <!-- 입력 영역 -->
             <div class="mt-2 relative flex items-center">
-                <button class="absolute left-3 text-gray-500 hover:text-blue-500 focus:outline-none">
+                <button class="absolute left-3 text-white hover:text-blue-500 focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -166,22 +230,22 @@
                 </button>
 
 
-                <textarea id="message-input" placeholder="메시지를 입력하세요..."
-                    class="w-full border px-4 py-2 pl-12 pr-24 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none overflow-hidden rounded-lg"></textarea>
+                <textarea id="message-input" placeholder="메시지 입력 (C)"
+                    class="w-full dkmd3 px-4 py-3 pl-12 pr-24 focus:outline-none focus:ring-1 focus:ring-white resize-none overflow-hidden rounded-lg"></textarea>
 
 
 
 
 
                 <div class="absolute right-2 flex">
-                    <button id="send-button" class="text-gray-500 hover:text-blue-500 focus:outline-none mr-2">
+                    <button id="send-button" class="text-white hover:text-blue-500 focus:outline-none mr-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
                     </button>
-                    <button id="clear-button" class="text-gray-500 hover:text-red-500 focus:outline-none">
+                    <button id="clear-button" class="text-white hover:text-red-500 focus:outline-none">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                             stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -204,10 +268,174 @@
 
 
     <script>
+        document.ondblclick = function (e) {
+            e.preventDefault();
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchRecentQuestions();
+            document.body.addEventListener('click', function (event) {
+                if (event.target.tagName === 'A') {
+                    event.target.setAttribute('target', '_blank');
+                }
+            });
+        });
+
+
         document.getElementById('sidebar-toggle').addEventListener('click', function () {
             var sidebar = document.getElementById('sidebar');
             sidebar.classList.toggle('hidden');
         });
+
+
+
+
+
+
+
+        // document.addEventListener('keydown', (event) => {
+        //     // 'C' 키가 눌렸는지 확인 (대문자 C와 소문자 c 모두 처리)
+        //     if (event.key === 'c' || event.key === 'C') {
+        //         // 입력 필드에 포커스 주기 전에 이벤트의 기본 동작 막기
+        //         event.preventDefault();
+
+        //         // ID가 "message-input"인 요소를 선택
+        //         const messageInput = document.getElementById('message-input');
+        //         if (messageInput) {
+        //             // 입력 필드에 포커스 주기
+        //             messageInput.focus();
+        //         }
+        //     }
+        // });
+
+
+
+
+
+
+        document.addEventListener('keydown', (event) => {
+            // 'C' 키가 눌렸는지 확인 (대문자 C와 소문자 c 모두 처리)
+            if (event.key === 'c' || event.key === 'C') {
+                // ID가 "message-input"인 요소를 선택
+                const messageInput = document.getElementById('message-input');
+                if (messageInput) {
+                    // 입력 필드가 이미 포커스 상태가 아닐 때만 포커스를 줍니다.
+                    if (document.activeElement !== messageInput) {
+                        messageInput.focus();
+                        // 커서를 입력 필드의 끝으로 이동
+                        messageInput.setSelectionRange(messageInput.value.length, messageInput.value.length);
+                        // 이벤트의 기본 동작을 막아 'C' 또는 'c'가 입력되는 것을 방지
+                        event.preventDefault();
+                    }
+                }
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+        function fetchRecentQuestions() {
+            fetch('/recent_questions')
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        var recentQuestionsList = document.getElementById('recent-questions-list');
+                        recentQuestionsList.innerHTML = '';
+                        data.forEach(item => {
+                            var listItem = document.createElement('li');
+                            listItem.classList.add('text-sm');
+                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-300 text-white" data-seq="${item.seq}">${item.q}</span>`;
+                            recentQuestionsList.appendChild(listItem);
+                        });
+                    } else {
+                        console.error('Error: Data is not an array');
+                    }
+                })
+                .catch(error => console.error('Error fetching recent questions:', error));
+        }
+
+
+
+
+
+
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // qlist 항목들을 포함하는 부모 요소를 선택합니다.
+            // 예를 들어, id가 'recent-questions-list'인 요소라고 가정합니다.
+            var parentElement = document.getElementById('recent-questions-list');
+
+            // 부모 요소에 이벤트 리스너를 추가합니다.
+            parentElement.addEventListener('click', function (event) {
+                // 클릭된 요소가 'qlist' 클래스를 가진 span 요소인지 확인합니다.
+                if (event.target.classList.contains('qlist') && event.target.tagName === 'SPAN') {
+                    var seq = event.target.getAttribute('data-seq');
+                    sidebar.classList.toggle('hidden');
+
+                    fetch('/get_answer/' + seq)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // console.log('Response data:', data);
+                            var a_chatContainer = document.getElementById('chat-container');
+                            var a_userMessageDiv = document.createElement('div');
+                            a_userMessageDiv.classList.add('mb-4', 'text-right');
+                            a_userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + data.q + '</div>';
+                            a_chatContainer.appendChild(a_userMessageDiv);
+                            var a_botMessageDiv = document.createElement('div');
+                            a_botMessageDiv.classList.add('mb-4');
+                            a_botMessageDiv.classList.add('text-lg');
+                            a_botMessageDiv.classList.add('text-white');
+                            a_botMessageDiv.innerHTML = marked.parse(data.a);
+                            a_chatContainer.appendChild(a_botMessageDiv);
+
+
+
+                            a_userMessageDiv.scrollIntoView({
+                                behavior: 'smooth', // 부드러운 스크롤
+                                block: 'start'
+                            });
+
+
+
+
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                }
+            });
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         document.getElementById('send-button').addEventListener('click', function () {
             var messageInput = document.getElementById('message-input');
@@ -260,6 +488,7 @@
                         var botMessageDiv = document.createElement('div');
                         botMessageDiv.classList.add('mb-4');
                         botMessageDiv.classList.add('text-lg');
+                        botMessageDiv.classList.add('text-white');
                         botMessageDiv.innerHTML = marked.parse(data.response);
                         chatContainer.appendChild(botMessageDiv);
 
@@ -281,34 +510,6 @@
                             copyButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M384 336l-192 0c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l140.1 0L400 115.9 400 320c0 8.8-7.2 16-16 16zM192 384l192 0c35.3 0 64-28.7 64-64l0-204.1c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1L192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-32-48 0 0 32c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l32 0 0-48-32 0z"/></svg>'
                             codeContainer.appendChild(copyButton);
 
-
-
-
-
-
-
-                            // copyButton.addEventListener('click', function () {
-                            //     var codeContent = this.previousSibling.textContent;
-                            //     navigator.clipboard.writeText(codeContent).then(() => {
-                            //         var alertDiv = document.createElement('div');
-                            //         alertDiv.textContent = 'Copied!';
-                            //         alertDiv.style.position = 'fixed';
-                            //         alertDiv.style.top = '50%';
-                            //         alertDiv.style.left = '50%';
-                            //         alertDiv.style.transform = 'translate(-50%, -50%)';
-                            //         alertDiv.style.backgroundColor = 'white';
-                            //         alertDiv.style.color = 'rgb(0, 0, 0)';
-                            //         alertDiv.style.padding = '10px';
-                            //         alertDiv.style.borderRadius = '5px';
-                            //         alertDiv.style.zIndex = '1000';
-
-                            //         document.body.appendChild(alertDiv);
-
-                            //         setTimeout(() => {
-                            //             document.body.removeChild(alertDiv);
-                            //         }, 2000);
-                            //     });
-                            // });
 
 
                             copyButton.addEventListener('click', function () {

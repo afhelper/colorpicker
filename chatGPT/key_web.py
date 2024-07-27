@@ -43,6 +43,78 @@ def insert_chat(q, a):
             connection.close()
             # print("MySQL connection is closed")
 
+def get_chat_from_db():
+    global sql_local, sql_remote, sql_database, sql_user, sql_password
+    connection = None
+    try:
+        connection = mysql.connector.connect(
+            host=sql_local,
+            database=sql_database,
+            user=sql_user,
+            password=sql_password
+        )
+
+        if connection.is_connected():
+            cursor = connection.cursor(dictionary=True)
+            select_query = "SELECT seq, q, a FROM chats ORDER BY seq DESC LIMIT 30"
+            cursor.execute(select_query)
+            result = cursor.fetchall()
+            chats = [{'seq': row['seq'], 'q': row['q'], 'a': row['a']} for row in result]
+            return jsonify(chats)
+
+
+    except Error as e:
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)})
+
+    finally:
+        if connection is not None and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+@app.route('/get_answer/<int:seq>', methods=['GET'])
+def get_answer(seq):
+    global sql_local, sql_database, sql_user, sql_password
+    connection = None
+    try:
+        connection = mysql.connector.connect(
+            host=sql_local,
+            database=sql_database,
+            user=sql_user,
+            password=sql_password
+        )
+
+        if connection.is_connected():
+            cursor = connection.cursor(dictionary=True)
+            query = "SELECT q, a FROM chats WHERE seq = %s"
+            cursor.execute(query, (seq,))
+            result = cursor.fetchone()
+
+            if result:
+                return jsonify({
+                    "seq": seq,
+                    "q": result['q'],
+                    "a": result['a']
+                })
+            else:
+                return jsonify({"error": "Answer not found"}), 404
+
+    except Error as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "Database error"}), 500
+
+    finally:
+        if connection is not None and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+
+
+
+
+
 
 client = OpenAI(api_key=api_key)
 
@@ -52,6 +124,14 @@ recent_messages = []
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/index2')
+def home2():
+    return render_template('index2.html')
+
+@app.route('/recent_questions', methods=['GET'])
+def recent_questions():
+    return get_chat_from_db()
 
 @app.route('/aid')
 def get_key():
