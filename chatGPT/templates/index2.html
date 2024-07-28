@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        @media (min-width: 768px) {
+        /* @media (min-width: 768px) {
             .sidebar {
                 display: block !important;
                 width: 300px;
@@ -22,7 +22,7 @@
             width: 300px;
             flex-shrink: 0;
             z-index: 10;
-        }
+        } */
 
         #message-input {
             height: 49px;
@@ -201,7 +201,8 @@
         </div> -->
 
         <!-- <div id="sidebar" class="sidebar hidden md:block bg-gray-200 w-1/4 p-4 overflow-y-scroll"> -->
-        <div id="sidebar" class="sidebar hidden dkmd2 p-4 overflow-y-scroll">
+        <!-- <div id="sidebar" class="sidebar hidden dkmd2 p-4 overflow-y-scroll"> -->
+        <div id="sidebar" class="flex-shrink-0 hidden md:block w-72 dkmd2 p-4 overflow-y-scroll">
             <ul id="recent-questions-list">
                 <!-- 최근 질문 목록이 여기 표시됩니다. -->
             </ul>
@@ -214,7 +215,7 @@
 
 
         <!-- 채팅 영역 -->
-        <div class="flex-grow container mx-auto p-2 flex flex-col dkmd2">
+        <div id="chat-area" class="flex-grow container mx-auto p-2 flex flex-col dkmd2">
             <div id="chat-container" class="flex-grow dkmd shadow-md rounded-lg p-4 overflow-y-auto">
 
             </div>
@@ -282,12 +283,58 @@
             });
         });
 
+        //기존토글바
+        // document.getElementById('sidebar-toggle').addEventListener('click', function () {
+        //     var sidebar = document.getElementById('sidebar');
+        //     sidebar.classList.toggle('hidden');
+        // });
 
+        //토글바 변경
         document.getElementById('sidebar-toggle').addEventListener('click', function () {
             var sidebar = document.getElementById('sidebar');
+            var mainContainer = document.querySelector('.flex-grow.container'); // 여기서 flex-grow와 container 클래스가 함께 있는 요소 선택
+
             sidebar.classList.toggle('hidden');
+
+            if (window.innerWidth < 768) { // 모바일 환경
+                if (!sidebar.classList.contains('hidden')) {
+                    sidebar.classList.add('w-full');
+                    mainContainer.classList.add('hidden'); // mainContainer를 숨김
+                } else {
+                    sidebar.classList.remove('w-full');
+                    mainContainer.classList.remove('hidden'); // mainContainer를 표시
+                }
+            }
         });
 
+        // 화면 크기 변경 감지
+        window.addEventListener('resize', function () {
+            var sidebar = document.getElementById('sidebar');
+            var mainContainer = document.querySelector('.flex-grow.container'); // 여기서 flex-grow와 container 클래스가 함께 있는 요소 선택
+
+            if (window.innerWidth >= 768) { // 데스크톱 환경
+                sidebar.classList.remove('w-full');
+                mainContainer.classList.remove('hidden'); // mainContainer를 표시
+            } else if (!sidebar.classList.contains('hidden')) { // 모바일 환경에서 사이드바가 보이는 경우
+                sidebar.classList.add('w-full');
+                mainContainer.classList.add('hidden'); // mainContainer를 숨김
+            }
+        });
+
+
+        // 화면 크기 변경 감지
+        window.addEventListener('resize', function () {
+            var sidebar = document.getElementById('sidebar');
+            var mainContainer = document.querySelector('.flex-grow.container');
+
+            if (window.innerWidth >= 768) { // 데스크톱 환경
+                sidebar.classList.remove('w-full');
+                mainContainer.classList.remove('hidden');
+            } else if (!sidebar.classList.contains('hidden')) { // 모바일 환경에서 사이드바가 보이는 경우
+                sidebar.classList.add('w-full');
+                mainContainer.classList.add('hidden');
+            }
+        });
 
 
 
@@ -354,7 +401,7 @@
                         data.forEach(item => {
                             var listItem = document.createElement('li');
                             listItem.classList.add('text-sm');
-                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-300 text-white" data-seq="${item.seq}">${item.q}</span>`;
+                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-300 text-white truncate w-auto" data-seq="${item.seq}">${item.q}</span>`;
                             recentQuestionsList.appendChild(listItem);
                         });
                     } else {
@@ -477,7 +524,7 @@
                             a_botMessageDiv.innerHTML = marked.parse(data.a);
                             a_chatContainer.appendChild(a_botMessageDiv);
 
-
+                            document.getElementById('chat-area').classList.remove('hidden');
 
                             a_userMessageDiv.scrollIntoView({
                                 behavior: 'smooth', // 부드러운 스크롤
