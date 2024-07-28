@@ -24,6 +24,8 @@
             z-index: 10;
         } */
 
+
+
         #message-input {
             height: 49px;
             color: white;
@@ -215,7 +217,7 @@
 
 
         <!-- 채팅 영역 -->
-        <div id="chat-area" class="flex-grow container mx-auto p-2 flex flex-col dkmd2">
+        <div id="chat-area" class="flex-grow container mx-auto p-2 flex flex-col dkmd2 w-72">
             <div id="chat-container" class="flex-grow dkmd shadow-md rounded-lg p-4 overflow-y-auto">
 
             </div>
@@ -501,7 +503,7 @@
                 // 클릭된 요소가 'qlist' 클래스를 가진 span 요소인지 확인합니다.
                 if (event.target.classList.contains('qlist') && event.target.tagName === 'SPAN') {
                     var seq = event.target.getAttribute('data-seq');
-                    sidebar.classList.toggle('hidden');
+
 
                     fetch('/get_answer/' + seq)
                         .then(response => {
@@ -524,12 +526,35 @@
                             a_botMessageDiv.innerHTML = marked.parse(data.a);
                             a_chatContainer.appendChild(a_botMessageDiv);
 
+                            sidebar.classList.toggle('hidden');
                             document.getElementById('chat-area').classList.remove('hidden');
+
+
+
+
+
+                            //재정렬
+                            // document.querySelector('.inline-block').classList.remove('hidden');
+                            // setTimeout(function () {
+                            //     document.querySelector('.inline-block').classList.add('hidden');
+                            //     setTimeout(function () {
+                            //         document.querySelector('.inline-block').classList.remove('hidden');
+                            //     }, 50);
+                            // }, 50);
 
                             a_userMessageDiv.scrollIntoView({
                                 behavior: 'smooth', // 부드러운 스크롤
                                 block: 'start'
                             });
+
+
+
+
+
+
+
+
+
 
 
 
