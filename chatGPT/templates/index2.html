@@ -58,10 +58,59 @@
             display: block;
         }
 
-        /* 전체 스크롤바 숨기기 */
+        /* 전체 스크롤바 숨기기
         ::-webkit-scrollbar {
             display: none;
+        } */
+
+        /* 전체 스크롤바 스타일 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            /* 스크롤바 너비 */
         }
+
+        /* 스크롤바 트랙 */
+        ::-webkit-scrollbar-track {
+            background: #2c2c2c;
+            /* 트랙 배경색 */
+            border-radius: 10px;
+            /* 트랙 모서리 둥글게 */
+        }
+
+        /* 스크롤바 핸들 */
+        ::-webkit-scrollbar-thumb {
+            background: #555;
+            /* 핸들 색상 */
+            border-radius: 10px;
+            /* 핸들 모서리 둥글게 */
+            border: 2px solid #2c2c2c;
+            /* 핸들 테두리 */
+        }
+
+        /* 스크롤바 핸들 호버시 */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #888;
+            /* 호버시 핸들 색상 */
+        }
+
+
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+            /* 웹킷 기반 브라우저 (Chrome, Safari)에서 스크롤바 숨기기 */
+        }
+
+        .custom-scrollbar {
+            -ms-overflow-style: none;
+            /* IE 및 Edge에서 스크롤바 숨기기 */
+            scrollbar-width: none;
+            /* Firefox에서 스크롤바 숨기기 */
+        }
+
+
+
+
+
+
 
         .h-screen {
             height: 100vh;
@@ -107,6 +156,15 @@
             background-color: #2f2f2f;
         }
 
+
+        .royal-blue {
+            background-color: #4169e1;
+        }
+
+
+
+
+
         /* 헤딩 태그 스타일 복원 및 Tailwind 초기화 덮어쓰기 */
         h1,
         h2,
@@ -148,7 +206,7 @@
 
 <body class="dkmd2 flex flex-col h-screen">
     <!-- 네비게이션 바 -->
-    <nav class="dkmd2 text-white p-2 flex justify-between items-center">
+    <nav class="royal-blue text-white p-2 flex justify-between items-center">
         <div class="container flex justify-between items-center">
             <div class="text-2xl font-bold">ChatGPT</div>
             <button id="sidebar-toggle" class="md:hidden">
@@ -161,17 +219,17 @@
         </div>
     </nav>
 
-    <div class="flex flex-grow overflow-hidden">
-        <div id="sidebar" class="flex-shrink-0 hidden md:block w-72 dkmd2 p-4 overflow-y-scroll">
+    <div class="flex flex-grow overflow-hidden dkmd">
+        <div id="sidebar" class="flex-shrink-0 hidden md:block w-72 dkmd p-4 overflow-y-scroll">
             <ul id="recent-questions-list">
                 <!-- 최근 질문 목록이 여기 표시됩니다. -->
             </ul>
         </div>
 
         <!-- 채팅 영역 -->
-        <div id="chat-area" class="flex-grow container mx-auto p-2 flex flex-col dkmd2 w-72">
+        <div id="chat-area" class="flex-grow container mx-auto p-2 flex flex-col dkmd w-72">
             <div id="chat-container"
-                class="flex-grow dkmd shadow-md rounded-lg p-4 overflow-y-auto max-w-5xl mx-auto w-full">
+                class="flex-grow dkmd rounded-lg p-4 overflow-y-auto max-w-5xl mx-auto w-full custom-scrollbar">
             </div>
 
             <!-- 입력 영역 -->
