@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding/d2coding.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         #message-input {
@@ -28,6 +29,7 @@
 
         pre code {
             color: white;
+            font-family: 'D2Coding', monospace !important;
         }
 
         code:not(pre code) {
@@ -150,7 +152,8 @@
         <div class="container flex justify-between items-center">
             <div class="text-2xl font-bold">ChatGPT</div>
             <button id="sidebar-toggle" class="md:hidden">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7">
                     </path>
                 </svg>
@@ -167,13 +170,15 @@
 
         <!-- 채팅 영역 -->
         <div id="chat-area" class="flex-grow container mx-auto p-2 flex flex-col dkmd2 w-72">
-            <div id="chat-container" class="flex-grow dkmd shadow-md rounded-lg p-4 overflow-y-auto">
+            <div id="chat-container"
+                class="flex-grow dkmd shadow-md rounded-lg p-4 overflow-y-auto max-w-5xl mx-auto w-full">
             </div>
 
             <!-- 입력 영역 -->
-            <div class="mt-2 relative flex items-center">
+            <div class="mt-2 relative flex items-center max-w-5xl mx-auto w-full">
                 <button id="up_img_btn" class="absolute left-3 text-white hover:text-blue-500 focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
@@ -236,7 +241,7 @@
                             var a_chatContainer = document.getElementById('chat-container');
                             var a_userMessageDiv = document.createElement('div');
                             a_userMessageDiv.classList.add('mb-4', 'text-right');
-                            a_userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + data.q + '</div>';
+                            a_userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + escapeHtml(data.q) + '</div>';
                             a_chatContainer.appendChild(a_userMessageDiv);
                             var a_botMessageDiv = document.createElement('div');
                             a_botMessageDiv.classList.add('mb-4', 'text-lg', 'text-white');
@@ -298,7 +303,7 @@
                         data.forEach(item => {
                             var listItem = document.createElement('li');
                             listItem.classList.add('text-sm');
-                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-300 text-white truncate w-auto" data-seq="${item.seq}">${item.q}</span>`;
+                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-300 text-white truncate w-auto" data-seq="${item.seq}">${escapeHtml(item.q)}</span>`;
                             recentQuestionsList.appendChild(listItem);
                         });
                     } else {
@@ -333,7 +338,7 @@
                 var chatContainer = document.getElementById('chat-container');
                 var userMessageDiv = document.createElement('div');
                 userMessageDiv.classList.add('mb-4', 'text-right');
-                userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + message + '</div>';
+                userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + escapeHtml(message) + '</div>';
                 chatContainer.appendChild(userMessageDiv);
 
                 userMessageDiv.scrollIntoView({
@@ -348,65 +353,65 @@
                     },
                     body: JSON.stringify({ message: message })
                 })
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('loading-spinner').classList.add('hidden');
-                    document.getElementById('up_img_btn').classList.remove('text-green-300');
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('loading-spinner').classList.add('hidden');
+                        document.getElementById('up_img_btn').classList.remove('text-green-300');
 
-                    var botMessageDiv = document.createElement('div');
-                    botMessageDiv.classList.add('mb-4', 'text-lg', 'text-white');
-                    botMessageDiv.innerHTML = marked.parse(data.response);
-                    chatContainer.appendChild(botMessageDiv);
+                        var botMessageDiv = document.createElement('div');
+                        botMessageDiv.classList.add('mb-4', 'text-lg', 'text-white');
+                        botMessageDiv.innerHTML = marked.parse(data.response);
+                        chatContainer.appendChild(botMessageDiv);
 
-                    userMessageDiv.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-
-                    var preElements = botMessageDiv.getElementsByTagName('pre');
-                    for (var i = 0; i < preElements.length; i++) {
-                        var codeContainer = document.createElement('div');
-                        codeContainer.classList.add('code-container');
-                        preElements[i].parentNode.insertBefore(codeContainer, preElements[i]);
-                        codeContainer.appendChild(preElements[i]);
-
-                        var copyButton = document.createElement('button');
-                        copyButton.classList.add('copy-button');
-                        copyButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M384 336l-192 0c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l140.1 0L400 115.9 400 320c0 8.8-7.2 16-16 16zM192 384l192 0c35.3 0 64-28.7 64-64l0-204.1c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1L192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-32-48 0 0 32c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l32 0 0-48-32 0z"/></svg>';
-                        codeContainer.appendChild(copyButton);
-
-                        copyButton.addEventListener('click', function () {
-                            var codeContent = this.previousSibling.textContent;
-                            navigator.clipboard.writeText(codeContent).then(() => {
-                                var alertDiv = document.createElement('div');
-                                alertDiv.textContent = 'Copied!';
-
-                                var buttonRect = this.getBoundingClientRect();
-                                alertDiv.style.position = 'fixed';
-                                alertDiv.style.top = (buttonRect.top - 4) + 'px';
-                                alertDiv.style.left = (buttonRect.left - 75) + 'px';
-
-                                alertDiv.style.backgroundColor = 'white';
-                                alertDiv.style.color = 'rgb(0, 0, 0)';
-                                alertDiv.style.padding = '5px 10px';
-                                alertDiv.style.borderRadius = '5px';
-                                alertDiv.style.zIndex = '1000';
-                                alertDiv.style.fontSize = '14px';
-                                alertDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-
-                                document.body.appendChild(alertDiv);
-
-                                setTimeout(() => {
-                                    document.body.removeChild(alertDiv);
-                                }, 1000);
-                            });
+                        userMessageDiv.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
                         });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    document.getElementById('loading-spinner').classList.add('hidden');
-                });
+
+                        var preElements = botMessageDiv.getElementsByTagName('pre');
+                        for (var i = 0; i < preElements.length; i++) {
+                            var codeContainer = document.createElement('div');
+                            codeContainer.classList.add('code-container');
+                            preElements[i].parentNode.insertBefore(codeContainer, preElements[i]);
+                            codeContainer.appendChild(preElements[i]);
+
+                            var copyButton = document.createElement('button');
+                            copyButton.classList.add('copy-button');
+                            copyButton.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M384 336l-192 0c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l140.1 0L400 115.9 400 320c0 8.8-7.2 16-16 16zM192 384l192 0c35.3 0 64-28.7 64-64l0-204.1c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1L192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-32-48 0 0 32c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l32 0 0-48-32 0z"/></svg>';
+                            codeContainer.appendChild(copyButton);
+
+                            copyButton.addEventListener('click', function () {
+                                var codeContent = this.previousSibling.textContent;
+                                navigator.clipboard.writeText(codeContent).then(() => {
+                                    var alertDiv = document.createElement('div');
+                                    alertDiv.textContent = 'Copied!';
+
+                                    var buttonRect = this.getBoundingClientRect();
+                                    alertDiv.style.position = 'fixed';
+                                    alertDiv.style.top = (buttonRect.top - 4) + 'px';
+                                    alertDiv.style.left = (buttonRect.left - 75) + 'px';
+
+                                    alertDiv.style.backgroundColor = 'white';
+                                    alertDiv.style.color = 'rgb(0, 0, 0)';
+                                    alertDiv.style.padding = '5px 10px';
+                                    alertDiv.style.borderRadius = '5px';
+                                    alertDiv.style.zIndex = '1000';
+                                    alertDiv.style.fontSize = '14px';
+                                    alertDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+
+                                    document.body.appendChild(alertDiv);
+
+                                    setTimeout(() => {
+                                        document.body.removeChild(alertDiv);
+                                    }, 1000);
+                                });
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('loading-spinner').classList.add('hidden');
+                    });
             }
         });
 
@@ -417,14 +422,14 @@
                     'Content-Type': 'application/json'
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    var chatContainer = document.getElementById('chat-container');
-                    chatContainer.innerHTML = '';
-                }
-            })
-            .catch(error => console.error('Error:', error));
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        var chatContainer = document.getElementById('chat-container');
+                        chatContainer.innerHTML = '';
+                    }
+                })
+                .catch(error => console.error('Error:', error));
         });
 
         document.getElementById('message-input').addEventListener('keydown', function (event) {
@@ -478,13 +483,22 @@
                 },
                 body: JSON.stringify({ image: base64Image })
             })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('up_img_btn').classList.add('text-green-300');
-            })
-            .catch(error => {
-                console.error('업로드 실패:', error);
-            });
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('up_img_btn').classList.add('text-green-300');
+                })
+                .catch(error => {
+                    console.error('업로드 실패:', error);
+                });
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     </script>
 </body>
