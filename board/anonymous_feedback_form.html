@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>익명 건의함</title>
+    <!-- Tailwind CSS 추가 -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+    <div class="bg-white shadow-md rounded-lg p-8 max-w-md w-full">
+        <h1 class="text-2xl font-bold mb-4">익명 건의함</h1>
+        <form id="suggestionForm">
+            <textarea id="suggestion" rows="4"
+                class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                required></textarea>
+            <br>
+            <button type="submit" class="mt-4 w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">건의
+                제출</button>
+        </form>
+        <p id="message" class="mt-4 text-center text-red-500"></p>
+    </div>
+
+    <script type="module">
+        console.log("스크립트 시작");
+
+        // Firebase SDK를 모듈로 import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, where, orderBy, limit, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+        console.log("Firebase 모듈 임포트 완료");
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
+            authDomain: "submit-33eb1.firebaseapp.com",
+            projectId: "submit-33eb1",
+            storageBucket: "submit-33eb1.appspot.com",
+            messagingSenderId: "123176179541",
+            appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        console.log("Firebase 초기화 완료");
+
+        // 사용자 식별자 얻기 (여기서는 Firebase Authentication의 uid를 사용)
+        async function getUserIdentifier() {
+            console.log("getUserIdentifier 함수 호출");
+            try {
+                const auth = getAuth();
+                const userCredential = await signInAnonymously(auth);
+                const uid = userCredential.user.uid;
+                console.log("사용자 uid:", uid);
+                return uid;
+            } catch (error) {
+                console.error("사용자 식별자 가져오기 오류:", error);
+                return "unknown";
+            }
+        }
+
+        // Firestore에서 가장 최근 제출 시간 확인
+        async function getLastSubmission(userIdentifier) {
+            console.log("getLastSubmission 함수 호출", userIdentifier);
+            try {
+                const q = query(
+                    collection(db, 'suggestions'),
+                    where('userIdentifier', '==', userIdentifier),
+                    orderBy('timestamp', 'desc'),
+                    limit(1)
+                );
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    console.log("마지막 제출 시간 찾음");
+                    const lastSubmissionData = querySnapshot.docs[0].data();
+                    const lastSubmissionTimestamp = lastSubmissionData.timestamp.toDate();
+                    return lastSubmissionTimestamp;
+                }
+                console.log("이전 제출 없음");
+                return null;
+            } catch (error) {
+                console.error("마지막 제출 시간 확인 오류:", error);
+                return null;
+            }
+        }
+
+        // 폼 제출 이벤트 리스너 수정
+        document.getElementById('suggestionForm').addEventListener('submit', async (e) => {
+            console.log("폼 제출 이벤트 발생");
+            e.preventDefault();
+            const suggestion = document.getElementById('suggestion').value;
+            const messageElement = document.getElementById('message');
+
+            try {
+                // 사용자 식별자 (Firebase uid 사용)
+                const userIdentifier = await getUserIdentifier();
+                console.log("사용자 식별자:", userIdentifier);
+
+                const lastSubmission = await getLastSubmission(userIdentifier);
+                const now = new Date();
+
+                if (lastSubmission && (now - lastSubmission) < (12 * 60 * 60 * 1000)) {
+                    console.log("12시간 내 재제출 시도");
+                    messageElement.textContent = '12시간 내에 이미 건의를 제출하셨습니다. 나중에 다시 시도해주세요.';
+                    return;
+                }
+
+                // Firestore에 건의 저장
+                console.log("Firestore에 저장 시도:", {
+                    content: suggestion,
+                    timestamp: serverTimestamp(),
+                    userIdentifier: userIdentifier
+                });
+                const docRef = await addDoc(collection(db, 'suggestions'), {
+                    content: suggestion,
+                    timestamp: serverTimestamp(),
+                    userIdentifier: userIdentifier
+                });
+                console.log("문서 저장 완료. 문서 ID:", docRef.id);
+
+                messageElement.textContent = '건의가 성공적으로 제출되었습니다.';
+                document.getElementById('suggestion').value = '';
+            } catch (error) {
+                console.error("건의 제출 중 오류 발생:", error);
+                messageElement.textContent = '건의 제출 중 오류가 발생했습니다. 나중에 다시 시도해주세요.';
+            }
+        });
+
+        console.log("스크립트 로딩 완료");
+    </script>
+</body>
+
+</html>
