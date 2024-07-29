@@ -89,14 +89,15 @@
 
         // Date 객체를 "YYMMDD HH:MM:SS" 형식으로 변환하는 함수
         function formatTimestamp(date) {
-            let year = date.getFullYear().toString().slice(2);
+            // let year = date.getFullYear().toString().slice(2);
+            let year = date.getFullYear().toString();
             let month = String(date.getMonth() + 1).padStart(2, '0');
             let day = String(date.getDate()).padStart(2, '0');
             let hours = String(date.getHours()).padStart(2, '0');
             let minutes = String(date.getMinutes()).padStart(2, '0');
             let seconds = String(date.getSeconds()).padStart(2, '0');
 
-            return `20${year}-${month}-${day}\n${hours}:${minutes}:${seconds}`;
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         }
     </script>
 </body>
