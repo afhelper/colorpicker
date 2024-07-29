@@ -60,10 +60,12 @@ def get_chat_from_db():
 
         if connection.is_connected():
             cursor = connection.cursor(dictionary=True)
-            select_query = "SELECT seq, q, a FROM chats ORDER BY seq DESC LIMIT 30"
+            # select_query = "SELECT seq, q, a FROM chats ORDER BY seq DESC LIMIT 30"
+            select_query = "SELECT seq, q FROM chats ORDER BY seq DESC LIMIT 100"
             cursor.execute(select_query)
             result = cursor.fetchall()
-            chats = [{'seq': row['seq'], 'q': row['q'], 'a': row['a']} for row in result]
+            # chats = [{'seq': row['seq'], 'q': row['q'], 'a': row['a']} for row in result]
+            chats = [{'seq': row['seq'], 'q': row['q']} for row in result]
             return jsonify(chats)
 
 
@@ -75,6 +77,58 @@ def get_chat_from_db():
         if connection is not None and connection.is_connected():
             cursor.close()
             connection.close()
+
+
+
+
+def delete_chat(seq):
+    global sql_local, sql_remote, sql_database, sql_user, sql_password
+    connection = None  # 연결을 None으로 초기화
+    try:
+        # MySQL 데이터베이스에 연결
+        connection = mysql.connector.connect(
+            host=sql_local,
+            database=sql_database,
+            user=sql_user,
+            password=sql_password
+        )
+
+        if connection.is_connected():
+            cursor = connection.cursor()
+            delete_query = "DELETE FROM chats WHERE seq = %s"
+            cursor.execute(delete_query, (seq,))
+            connection.commit() 
+            # print("Record deleted successfully")
+
+    except Error as e:
+        print(f"Error: {e}")
+    
+    finally:
+        if connection is not None and connection.is_connected():
+            cursor.close()
+            connection.close()
+            # print("MySQL connection is closed")
+
+
+def keep_only_last_in_place(arr):
+    if arr:  # 배열이 비어있지 않은 경우에만
+        arr[:] = arr[-1:]  # 마지막 요소만 남도록 배열을 수정
+    else:
+        arr.clear()  # 배열이 비어있으면 빈 배열로 설정
+
+
+
+
+@app.route('/delete_chat', methods=['POST'])
+def delete_chat_endpoint():
+    data = request.json
+    seq = data.get('seq')
+    try:
+        delete_chat(seq)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 
 
 
@@ -185,9 +239,17 @@ def chat():
     data = request.json
     user_message = data.get('message', '')
 
+    if user_message.startswith('!'):
+        recent_messages = []
+        user_message = user_message[1:]
+
+    if user_message.startswith('#'):
+        user_message = user_message[1:]
+        keep_only_last_in_place(recent_messages)
 
     if image_binary == '':
         if user_message.startswith('@'):
+            user_message = user_message[1:]
             use_model = 'gpt-4o'
         else:
             use_model = 'gpt-4o-mini'

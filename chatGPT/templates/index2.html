@@ -361,7 +361,7 @@
                         data.forEach(item => {
                             var listItem = document.createElement('li');
                             listItem.classList.add('text-sm');
-                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-300 text-white truncate w-auto" data-seq="${item.seq}">${escapeHtml(item.q)}</span>`;
+                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-600 text-white truncate w-auto" data-seq="${item.seq}">${escapeHtml(item.q)}</span>`;
                             recentQuestionsList.appendChild(listItem);
                         });
                     } else {
@@ -387,16 +387,31 @@
         document.getElementById('send-button').addEventListener('click', function () {
             var messageInput = document.getElementById('message-input');
             var message = messageInput.value;
+            let prefix = '';
             if (message.trim() !== '') {
                 document.getElementById('loading-spinner').classList.remove('hidden');
                 setTimeout(() => {
                     messageInput.value = '';
                 }, 0);
 
+
+
+
+
+
+
                 var chatContainer = document.getElementById('chat-container');
                 var userMessageDiv = document.createElement('div');
                 userMessageDiv.classList.add('mb-4', 'text-right');
-                userMessageDiv.innerHTML = '<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">' + escapeHtml(message) + '</div>';
+
+
+                if (message.startsWith('!') || message.startsWith('@') || message.startsWith('#')) {
+                    prefix = `<span class="bg-transparent text-white text-xs font-medium me-2 px-1.5 py-0.5 rounded dark:bg-transparent dark:text-white border border-white">${message.charAt(0)}</span>`;
+                    userMessageDiv.innerHTML = `${prefix}<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">${escapeHtml(message.substring(1))}</div>`;
+                } else {
+                    userMessageDiv.innerHTML = `<div class="bg-blue-500 text-white p-2 rounded-lg inline-block">${escapeHtml(message)}</div>`;
+                }
+
                 chatContainer.appendChild(userMessageDiv);
 
                 userMessageDiv.scrollIntoView({
@@ -524,6 +539,104 @@
             }
         });
 
+
+
+
+        //질문삭제로직 구현전
+        // const container = document.getElementById('recent-questions-list');
+        // let hoveredItem = null; // 현재 호버된 아이템을 저장할 변수
+
+        // container.addEventListener('mouseover', (event) => {
+        //     if (event.target.classList.contains('qlist')) {
+        //         hoveredItem = event.target; // 호버된 아이템 저장
+        //     }
+        // });
+
+        // container.addEventListener('mouseout', (event) => {
+        //     if (event.target.classList.contains('qlist') && hoveredItem === event.target) {
+        //         hoveredItem = null; // 호버된 아이템 초기화
+        //     }
+        // });
+
+        // document.addEventListener('keydown', (event) => {
+        //     // 'd' 키가 눌렸을 때
+        //     if (event.key === 'd' && hoveredItem) {
+        //         let dataSeq = hoveredItem.getAttribute('data-seq');
+        //         let confirmDelete = confirm(`${dataSeq} 삭제하시겠습니까?`);
+        //         if (confirmDelete) {
+        //             // 실제 삭제 로직
+        //             let listItem = hoveredItem.parentElement; // 해당 아이템의 부모 <li> 선택
+        //             listItem.remove(); // <li> 요소 삭제
+        //             hoveredItem = null; // 호버된 아이템 초기화
+        //         }
+        //     }
+        // });
+
+
+        // 질문삭제로직
+        const container = document.getElementById('recent-questions-list');
+        let hoveredItem = null; // 현재 호버된 아이템을 저장할 변수
+
+        container.addEventListener('mouseover', (event) => {
+            if (event.target.classList.contains('qlist')) {
+                hoveredItem = event.target; // 호버된 아이템 저장
+            }
+        });
+
+        container.addEventListener('mouseout', (event) => {
+            if (event.target.classList.contains('qlist') && hoveredItem === event.target) {
+                hoveredItem = null; // 호버된 아이템 초기화
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            // 'd' 키가 눌렸을 때
+            if (event.key === 'd' && hoveredItem) {
+                let dataSeq = hoveredItem.getAttribute('data-seq');
+
+                // 실제 삭제 로직
+                fetch('/delete_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ seq: dataSeq })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            let listItem = hoveredItem.parentElement; // 해당 아이템의 부모 <li> 선택
+                            listItem.remove(); // <li> 요소 삭제
+                            hoveredItem = null; // 호버된 아이템 초기화
+                        } else {
+                            alert('삭제 실패: ' + data.error);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         function encodeImageToBase64(file) {
             const reader = new FileReader();
             reader.onload = function (event) {
@@ -558,6 +671,9 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+
+
     </script>
 </body>
 
