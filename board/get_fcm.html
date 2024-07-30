@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>FCM Example</title>
+</head>
+
+<body>
+    <h1>Firebase Cloud Messaging Example</h1>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
+            authDomain: "submit-33eb1.firebaseapp.com",
+            projectId: "submit-33eb1",
+            storageBucket: "submit-33eb1.appspot.com",
+            messagingSenderId: "123176179541",
+            appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        // Retrieve Firebase Messaging object.
+        const messaging = getMessaging(app);
+
+        // Add the public key generated from the console here.
+        const publicVapidKey = "YOUR_PUBLIC_VAPID_KEY";
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                .then((registration) => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+
+                    // Request permission and get token
+                    Notification.requestPermission().then((permission) => {
+                        if (permission === 'granted') {
+                            console.log('Notification permission granted.');
+                            getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
+                                .then((currentToken) => {
+                                    if (currentToken) {
+                                        console.log('FCM Token:', currentToken);
+                                        // 서버에 토큰을 전송하거나 저장하는 코드 작성
+                                        sendTokenToServer(currentToken);
+                                    } else {
+                                        console.log('No registration token available. Request permission to generate one.');
+                                    }
+                                }).catch((err) => {
+                                    console.error('An error occurred while retrieving token. ', err);
+                                });
+                        } else if (permission === 'denied') {
+                            console.log('Notification permission denied.');
+                            alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.');
+                        } else {
+                            console.log('Notification permission ignored or closed.');
+                            alert('알림 권한 요청이 무시되었습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.');
+                        }
+                    }).catch((err) => {
+                        console.error('An error occurred while requesting notification permission. ', err);
+                    });
+                }).catch((err) => {
+                    console.error('Service Worker registration failed: ', err);
+                });
+        }
+
+        function sendTokenToServer(token) {
+            // 서버에 토큰 전송 로직 작성
+            console.log('Token sent to server:', token);
+        }
+
+        // Handle incoming messages
+        onMessage(messaging, (payload) => {
+            console.log('Message received. ', payload);
+            // 메시지 처리 코드 작성
+        });
+    </script>
+</body>
+
+</html>

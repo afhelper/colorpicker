@@ -7,7 +7,7 @@
     <title>ChatGPT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-icon-180x180.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-icon-180x180w.png') }}">
     <link href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding/d2coding.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
@@ -201,6 +201,11 @@
         h6 {
             font-size: 1em !important;
         }
+
+        .app-logo {
+            height: 23px;
+            display: inline;
+        }
     </style>
 </head>
 
@@ -208,7 +213,9 @@
     <!-- 네비게이션 바 -->
     <nav class="royal-blue text-white p-2 flex justify-between items-center">
         <div class="container flex justify-between items-center">
-            <div class="text-2xl font-bold">ChatGPT</div>
+            <div class="text-2xl font-bold"><img src="{{ url_for('static', filename='apple-icon-180x180.png') }}"
+                    class="app-logo mr-1 mb-1"><span>Hello
+                    World</span></div>
             <button id="sidebar-toggle" class="md:hidden">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
