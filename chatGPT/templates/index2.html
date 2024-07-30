@@ -206,6 +206,10 @@
             height: 23px;
             display: inline;
         }
+
+        #hello {
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -213,7 +217,8 @@
     <!-- 네비게이션 바 -->
     <nav class="royal-blue text-white p-2 flex justify-between items-center">
         <div class="container flex justify-between items-center">
-            <div class="text-2xl font-bold"><img src="{{ url_for('static', filename='apple-icon-180x180.png') }}"
+            <div class="text-2xl font-bold" id="hello"><img
+                    src="{{ url_for('static', filename='apple-icon-180x180.png') }}"
                     class="app-logo mr-1 mb-1"><span>Hello
                     World</span></div>
             <button id="sidebar-toggle" class="md:hidden">
@@ -283,6 +288,15 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+
+            // 새로고침 버튼
+            const helloElement = document.getElementById('hello');
+            helloElement.addEventListener('click', function () {
+                location.reload();
+            });
+
+
+
             fetchRecentQuestions();
             document.body.addEventListener('click', function (event) {
                 if (event.target.tagName === 'A') {
