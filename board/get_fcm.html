@@ -29,11 +29,11 @@
         const messaging = getMessaging(app);
 
         // Add the public key generated from the console here.
-        const publicVapidKey = "YOUR_PUBLIC_VAPID_KEY";
+        const publicVapidKey = "BN1mmgZ7wxwZSHATgl7pe_UirrGJj-ksPhMuNH9GNFdmzWEQoNs7UamL6UvNPx---MOZybWZqAIWVV7IAnqaZug";
 
         // Register service worker
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            navigator.serviceWorker.register('/colorpicker/board/firebase-messaging-sw.js')
                 .then((registration) => {
                     console.log('Service Worker registered with scope:', registration.scope);
 
