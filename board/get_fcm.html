@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 
 <head>
-    <title>FCM Example</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCM 토큰 발급</title>
 </head>
 
 <body>
-    <h1>Firebase Cloud Messaging Example</h1>
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging.js";
+    <h1>FCM 토큰 발급 페이지</h1>
+    <p>콘솔을 확인하여 FCM 토큰을 확인하세요.</p>
 
-        // Your web app's Firebase configuration
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js"></script>
+    <script>
+        // Firebase 구성
         const firebaseConfig = {
             apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
             authDomain: "submit-33eb1.firebaseapp.com",
@@ -22,62 +24,49 @@
             appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
         };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
+        console.log('Firebase가 초기화되었습니다.');
 
-        // Retrieve Firebase Messaging object.
-        const messaging = getMessaging(app);
-
-        // Add the public key generated from the console here.
-        const publicVapidKey = "BN1mmgZ7wxwZSHATgl7pe_UirrGJj-ksPhMuNH9GNFdmzWEQoNs7UamL6UvNPx---MOZybWZqAIWVV7IAnqaZug";
-
-        // Register service worker
+        // 서비스 워커 등록
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/colorpicker/board/firebase-messaging-sw.js')
-                .then((registration) => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-
-                    // Request permission and get token
-                    Notification.requestPermission().then((permission) => {
-                        if (permission === 'granted') {
-                            console.log('Notification permission granted.');
-                            getToken(messaging, { vapidKey: publicVapidKey, serviceWorkerRegistration: registration })
-                                .then((currentToken) => {
-                                    if (currentToken) {
-                                        console.log('FCM Token:', currentToken);
-                                        // 서버에 토큰을 전송하거나 저장하는 코드 작성
-                                        sendTokenToServer(currentToken);
-                                    } else {
-                                        console.log('No registration token available. Request permission to generate one.');
-                                    }
-                                }).catch((err) => {
-                                    console.error('An error occurred while retrieving token. ', err);
-                                });
-                        } else if (permission === 'denied') {
-                            console.log('Notification permission denied.');
-                            alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.');
-                        } else {
-                            console.log('Notification permission ignored or closed.');
-                            alert('알림 권한 요청이 무시되었습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.');
-                        }
-                    }).catch((err) => {
-                        console.error('An error occurred while requesting notification permission. ', err);
-                    });
-                }).catch((err) => {
-                    console.error('Service Worker registration failed: ', err);
+            navigator.serviceWorker.register('firebase-messaging-sw.js')
+                .then(function (registration) {
+                    console.log('Service Worker 등록 성공:', registration.scope);
+                }).catch(function (err) {
+                    console.log('Service Worker 등록 실패:', err);
                 });
         }
 
-        function sendTokenToServer(token) {
-            // 서버에 토큰 전송 로직 작성
-            console.log('Token sent to server:', token);
+        // FCM 토큰 발급 함수
+        async function requestNotificationPermissionAndGetToken() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    console.log('알림 권한이 허용되었습니다.');
+                    // FCM 토큰 가져오기
+                    const currentToken = await messaging.getToken({
+                        vapidKey: 'BN1mmgZ7wxwZSHATgl7pe_UirrGJj-ksPhMuNH9GNFdmzWEQoNs7UamL6UvNPx---MOZybWZqAIWVV7IAnqaZug'
+                    });
+                    if (currentToken) {
+                        console.log('FCM 토큰:', currentToken);
+                        // 여기서 토큰을 서버에 전송하거나 필요한 작업을 수행할 수 있습니다.
+                    } else {
+                        console.log('토큰을 가져올 수 없습니다. 권한을 다시 요청해야 할 수 있습니다.');
+                    }
+                } else {
+                    console.log('알림 권한이 거부되었습니다.');
+                }
+            } catch (err) {
+                console.error('토큰을 가져오는 중 오류가 발생했습니다:', err);
+                // 추가적인 오류 정보 로깅
+                console.error('오류 세부 정보:', err.code, err.message);
+            }
         }
 
-        // Handle incoming messages
-        onMessage(messaging, (payload) => {
-            console.log('Message received. ', payload);
-            // 메시지 처리 코드 작성
-        });
+        // 페이지 로드 시 함수 실행
+        window.addEventListener('load', requestNotificationPermissionAndGetToken);
     </script>
 </body>
 
