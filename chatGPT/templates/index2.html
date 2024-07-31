@@ -290,6 +290,44 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            //스크롤 데이터 구현
+            const sidebar = document.getElementById('sidebar');
+
+            function throttle(func, limit) {
+                let lastFunc;
+                let lastRan;
+                return function (...args) {
+                    const context = this;
+                    if (!lastRan) {
+                        func.apply(context, args);
+                        lastRan = Date.now();
+                    } else {
+                        clearTimeout(lastFunc);
+                        lastFunc = setTimeout(function () {
+                            if ((Date.now() - lastRan) >= limit) {
+                                func.apply(context, args);
+                                lastRan = Date.now();
+                            }
+                        }, limit - (Date.now() - lastRan));
+                    }
+                }
+            }
+
+            const handleScroll = throttle(function () {
+                if (sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight) {
+                    // 스크롤이 끝에 도달했을 때 추가 데이터를 가져옴
+                    fetchMoreData();
+                }
+            }, 200);
+
+            sidebar.addEventListener('scroll', handleScroll);
+
+
+
+
+
+
+
 
             // 새로고침 버튼
             const helloElement = document.getElementById('hello');
@@ -403,7 +441,7 @@
                         data.forEach(item => {
                             var listItem = document.createElement('li');
                             listItem.classList.add('text-sm');
-                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-600 text-white truncate w-auto" data-seq="${item.seq}">${escapeHtml(item.q)}</span>`;
+                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-600 text-white truncate w-auto" data-seq="${item.seq}">[${item.seq}] ${escapeHtml(item.q)}</span>`;
                             recentQuestionsList.appendChild(listItem);
                         });
                     } else {
@@ -726,16 +764,6 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // 다운로드 html
-        // function downloadHTML() {
-        //     const content = document.getElementById("chat-container").innerHTML;
-        //     const blob = new Blob([content], { type: 'text/html' });
-        //     const link = document.createElement('a');
-        //     link.href = URL.createObjectURL(blob);
-        //     link.download = 'content.html';
-        //     link.click();
-        // }
-
 
         function downloadHTML() {
             // 현재 페이지의 모든 스타일 요소를 가져옵니다
@@ -775,9 +803,34 @@
 
 
 
+        function fetchMoreData() {
+            var recentQuestionsList = document.getElementById('recent-questions-list');
+            var lastQuestion = recentQuestionsList.lastElementChild;
+            var lastSeq = lastQuestion ? lastQuestion.querySelector('.qlist').getAttribute('data-seq') : 0;
 
-
-
+            fetch('/more_recent_questions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ last_seq: lastSeq })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        var recentQuestionsList = document.getElementById('recent-questions-list');
+                        data.forEach(item => {
+                            var listItem = document.createElement('li');
+                            listItem.classList.add('text-sm');
+                            listItem.innerHTML = `<span class="qlist cursor-pointer block p-1 rounded hover:bg-gray-600 text-white truncate w-auto" data-seq="${item.seq}">[${item.seq}] ${escapeHtml(item.q)}</span>`;
+                            recentQuestionsList.appendChild(listItem);
+                        });
+                    } else {
+                        throw new Error('Data is not an array');
+                    }
+                })
+                .catch(error => console.error('Error fetching more questions:', error));
+        }
 
 
 

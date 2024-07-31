@@ -61,7 +61,7 @@ def get_chat_from_db():
         if connection.is_connected():
             cursor = connection.cursor(dictionary=True)
             # select_query = "SELECT seq, q, a FROM chats ORDER BY seq DESC LIMIT 30"
-            select_query = "SELECT seq, q FROM chats ORDER BY seq DESC LIMIT 100"
+            select_query = "SELECT seq, q FROM chats ORDER BY seq DESC LIMIT 50"
             cursor.execute(select_query)
             result = cursor.fetchall()
             # chats = [{'seq': row['seq'], 'q': row['q'], 'a': row['a']} for row in result]
@@ -77,6 +77,36 @@ def get_chat_from_db():
         if connection is not None and connection.is_connected():
             cursor.close()
             connection.close()
+
+
+
+def get_more_recent_questions(last_seq):
+    global sql_local, sql_remote, sql_database, sql_user, sql_password
+    connection = None
+    try:
+        connection = mysql.connector.connect(
+            host=sql_local,
+            database=sql_database,
+            user=sql_user,
+            password=sql_password
+        )
+
+        if connection.is_connected():
+            cursor = connection.cursor(dictionary=True)
+            select_query = "SELECT seq, q FROM chats WHERE seq < %s ORDER BY seq DESC LIMIT 50"
+            cursor.execute(select_query, (last_seq,))
+            rows = cursor.fetchall()
+            return rows
+
+    except Error as e:
+        print(f"Error: {e}")
+        return []
+
+    finally:
+        if connection is not None and connection.is_connected():
+            cursor.close()
+            connection.close()
+
 
 
 
@@ -116,6 +146,16 @@ def keep_only_last_in_place(arr):
     else:
         arr.clear()  # 배열이 비어있으면 빈 배열로 설정
 
+
+@app.route('/more_recent_questions', methods=['POST'])
+def more_recent_questions():
+    data = request.json
+    last_seq = data.get('last_seq')
+    if last_seq is not None:
+        questions = get_more_recent_questions(last_seq)
+        return jsonify(questions)
+    else:
+        return jsonify([]), 400
 
 
 
@@ -212,6 +252,10 @@ def home():
 @app.route('/index2')
 def home2():
     return render_template('index2.html')
+
+@app.route('/fcm')
+def home3():
+    return render_template('get_fcm.html')
 
 @app.route('/recent_questions', methods=['GET'])
 def recent_questions():
