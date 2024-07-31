@@ -221,6 +221,8 @@
                     src="{{ url_for('static', filename='apple-icon-180x180.png') }}"
                     class="app-logo mr-1 mb-1"><span>Hello
                     World</span></div>
+
+
             <button id="sidebar-toggle" class="md:hidden">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
@@ -295,6 +297,12 @@
                 location.reload();
             });
 
+            // html 다운로드 버튼
+            document.body.addEventListener('click', (event) => {
+                if (event.target.closest('.down_btn')) {
+                    downloadHTML();
+                }
+            });
 
 
             fetchRecentQuestions();
@@ -324,8 +332,21 @@
                             a_chatContainer.appendChild(a_userMessageDiv);
                             var a_botMessageDiv = document.createElement('div');
                             a_botMessageDiv.classList.add('mb-4', 'text-lg', 'text-white');
-                            a_botMessageDiv.innerHTML = marked.parse(data.a);
+                            a_botMessageDiv.innerHTML = marked.parse(data.a + `<button class="down_btn ml-1 right-3 text-white hover:text-green-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+            </button>`);
+                            const existingButtons = a_chatContainer.querySelectorAll('.down_btn');
+                            existingButtons.forEach(button => button.remove());
+
                             a_chatContainer.appendChild(a_botMessageDiv);
+
+
+
+
 
                             sidebar.classList.toggle('hidden');
                             document.getElementById('chat-area').classList.remove('hidden');
@@ -454,8 +475,20 @@
 
                         var botMessageDiv = document.createElement('div');
                         botMessageDiv.classList.add('mb-4', 'text-lg', 'text-white');
-                        botMessageDiv.innerHTML = marked.parse(data.response);
+                        botMessageDiv.innerHTML = marked.parse(data.response + `<button class="down_btn ml-1 right-3 text-white hover:text-green-300 focus:outline-none">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+            </button>`);
+
+                        const saveButtons2 = document.getElementById("chat-container").querySelectorAll('.down_btn');
+                        saveButtons2.forEach(button => button.remove());
+
                         chatContainer.appendChild(botMessageDiv);
+
+
 
                         userMessageDiv.scrollIntoView({
                             behavior: 'smooth',
@@ -692,6 +725,62 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // 다운로드 html
+        // function downloadHTML() {
+        //     const content = document.getElementById("chat-container").innerHTML;
+        //     const blob = new Blob([content], { type: 'text/html' });
+        //     const link = document.createElement('a');
+        //     link.href = URL.createObjectURL(blob);
+        //     link.download = 'content.html';
+        //     link.click();
+        // }
+
+
+        function downloadHTML() {
+            // 현재 페이지의 모든 스타일 요소를 가져옵니다
+            const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+                .map(el => el.outerHTML)
+                .join('\n');
+
+            const saveButtons = document.getElementById("chat-container").querySelectorAll('.down_btn');
+            saveButtons.forEach(button => button.remove());
+
+
+            // chat-container의 내용을 가져옵니다
+            const content = document.getElementById("chat-container").innerHTML;
+            // HTML 구조를 만들고 스타일과 컨텐츠를 포함시킵니다
+            const fullHTML = `
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Downloaded Content</title>
+    ${styles}
+</head>
+<body class="dkmd mx-auto" style="padding: 2rem;max-width: 1000px;">
+    ${content}
+</body>
+</html>`;
+
+            const blob = new Blob([fullHTML], { type: 'text/html' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'content.html';
+            link.click();
+        }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
