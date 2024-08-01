@@ -771,7 +771,7 @@
                 .map(el => el.outerHTML)
                 .join('\n');
 
-            const saveButtons = document.getElementById("chat-container").querySelectorAll('.down_btn');
+            const saveButtons = document.getElementById("chat-container").querySelectorAll('.down_btn, .copy-button');
             saveButtons.forEach(button => button.remove());
 
 
