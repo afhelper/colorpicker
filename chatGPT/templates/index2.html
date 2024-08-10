@@ -219,7 +219,7 @@
         id="navcolor">
         <div class="container flex justify-between items-center">
             <div class="text-2xl font-bold"><img
-                    src="{{ url_for('static', filename='apple-icon-180x180.png' if session.get('cube') == 1 else 'apple-icon-180x180p.png') }}"
+                    src="{{ url_for('static', filename='apple-icon-180x180.png' if cube == 1 else 'apple-icon-180x180p.png') }}"
                     class="app-logo mr-1 mb-1" id="cube"><span id="hello">{% if cube == 1 %}Hello World{% endif
                     %}</span></div>
 
