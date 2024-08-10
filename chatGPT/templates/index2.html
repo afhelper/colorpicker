@@ -215,12 +215,13 @@
 
 <body class="dkmd2 flex flex-col h-screen">
     <!-- 네비게이션 바 -->
-    <nav class="royal-blue text-white p-2 flex justify-between items-center">
+    <nav class="text-white p-2 flex justify-between items-center {% if cube == 1 %}royal-blue{% else %}dkmd3{% endif %}"
+        id="navcolor">
         <div class="container flex justify-between items-center">
-            <div class="text-2xl font-bold" id="hello"><img
-                    src="{{ url_for('static', filename='apple-icon-180x180.png') }}"
-                    class="app-logo mr-1 mb-1"><span>Hello
-                    World</span></div>
+            <div class="text-2xl font-bold"><img
+                    src="{{ url_for('static', filename='apple-icon-180x180.png' if session.get('cube') == 1 else 'apple-icon-180x180p.png') }}"
+                    class="app-logo mr-1 mb-1" id="cube"><span id="hello">{% if cube == 1 %}Hello World{% endif
+                    %}</span></div>
 
 
             <button id="sidebar-toggle" class="md:hidden">
@@ -290,6 +291,48 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            //cube
+            const cubeElement = document.getElementById('cube');
+
+            cubeElement.addEventListener('click', function () {
+                fetch('/toggle_cube')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            // 이미지 토글로직
+                            const currentSrc = cubeElement.src.split('/').pop();
+                            const element = document.getElementById('hello');
+                            const navcolor = document.getElementById('navcolor');
+                            if (currentSrc === 'apple-icon-180x180.png') {
+                                cubeElement.src = "{{ url_for('static', filename='apple-icon-180x180p.png') }}";
+                                element.textContent = '';
+                                navcolor.classList.remove('royal-blue');
+                                navcolor.classList.add('dkmd3');
+                            } else {
+                                cubeElement.src = "{{ url_for('static', filename='apple-icon-180x180.png') }}";
+                                element.textContent = 'Hello World';
+                                navcolor.classList.remove('dkmd3');
+                                navcolor.classList.add('royal-blue');
+                            }
+                        } else {
+                            alert("Failed");
+                        }
+                    })
+                    .catch(error => {
+                        alert("An error occurred: " + error.message);
+                    });
+            });
+            //
+
+
+
+
+
             //스크롤 데이터 구현
             const sidebar = document.getElementById('sidebar');
 

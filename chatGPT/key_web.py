@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
 from openai import OpenAI
 import json
 import mysql.connector
@@ -6,6 +6,7 @@ from mysql.connector import Error
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024
+app.secret_key = '0cube1'
 
 img_type = ''
 image_binary = ''
@@ -245,13 +246,22 @@ client = OpenAI(api_key=api_key)
 # 최근 메시지를 저장할 리스트
 recent_messages = []
 
-@app.route('/')
-def home():
-    return render_template('index.html')
+# @app.route('/')
+# def home():
+#     return render_template('index.html')
 
 @app.route('/index2')
 def home2():
-    return render_template('index2.html')
+    # 세션에 cube가 없으면 기본값 0으로 설정
+    if 'cube' not in session:
+        session['cube'] = 0
+    return render_template('index2.html', cube=session['cube'])
+
+@app.route('/toggle_cube')
+def toggle_cube():
+    # cube 값을 토글
+    session['cube'] = 1 - session['cube']
+    return jsonify({'success': True})
 
 @app.route('/fcm')
 def home3():
@@ -276,6 +286,9 @@ def clear():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    #큐브 확인
+    if session.get('cube') == 0:
+        return jsonify({'response': 'error'})
     global recent_messages  # 전역 변수 선언
     global img_type
     global image_binary
