@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>to 유정</title>
     <!-- Tailwind CSS 추가 -->
     <!-- <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"> -->
@@ -43,7 +44,6 @@
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
         console.log("Firebase 모듈 임포트 완료");
 
-        // Firebase 설정
         const firebaseConfig = {
             apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
             authDomain: "submit-33eb1.firebaseapp.com",
@@ -53,13 +53,11 @@
             appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
         };
 
-        // Firebase 초기화
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         console.log("Firebase 초기화 완료");
 
-        // 사용자 식별자 얻기 (여기서는 Firebase Authentication의 uid를 사용)
         async function getUserIdentifier() {
             console.log("getUserIdentifier 함수 호출");
             try {
@@ -74,7 +72,6 @@
             }
         }
 
-        // Firestore에서 가장 최근 제출 시간 확인
         async function getLastSubmission(userIdentifier) {
             console.log("getLastSubmission 함수 호출", userIdentifier);
             try {
@@ -107,7 +104,6 @@
             const messageElement = document.getElementById('message');
 
             try {
-                // 사용자 식별자 (Firebase uid 사용)
                 const userIdentifier = await getUserIdentifier();
                 console.log("사용자 식별자:", userIdentifier);
 
@@ -120,7 +116,6 @@
                     return;
                 }
 
-                // Firestore에 건의 저장
                 console.log("Firestore에 저장 시도:", {
                     content: suggestion,
                     timestamp: serverTimestamp(),
