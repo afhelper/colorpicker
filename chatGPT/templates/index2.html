@@ -315,7 +315,17 @@
                                 navcolor.classList.add('dkmd3');
                             } else {
                                 cubeElement.src = "{{ url_for('static', filename='apple-icon-180x180.png') }}";
-                                element.textContent = 'Hello World';
+                                // element.textContent = 'Hello World';
+                                const text = "Hello World";
+                                let index = 0;
+                                function type() {
+                                    if (index < text.length) {
+                                        document.getElementById("hello").innerHTML += text.charAt(index);
+                                        index++;
+                                        setTimeout(type, 100); // 타이핑 속도 (200ms)
+                                    }
+                                }
+                                type();
                                 navcolor.classList.remove('dkmd3');
                                 navcolor.classList.add('royal-blue');
                             }
@@ -874,6 +884,8 @@
                 })
                 .catch(error => console.error('Error fetching more questions:', error));
         }
+
+
 
 
 
