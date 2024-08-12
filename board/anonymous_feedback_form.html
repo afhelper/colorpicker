@@ -7,6 +7,15 @@
     <title>to 유정</title>
     <!-- Tailwind CSS 추가 -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .h-screen {
+            height: 100vh;
+            /* 기본적으로 100vh 사용 */
+            height: 100dvh !important;
+            /* dvh 지원 브라우저에서는 dvh 사용 */
+            /* touch-action: manipulation; */
+        }
+    </style>
 </head>
 
 <body class="bg-gray-100 flex items-center justify-center h-screen">
