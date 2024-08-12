@@ -133,11 +133,11 @@
                 });
                 console.log("문서 저장 완료. 문서 ID:", docRef.id);
 
-                messageElement.textContent = '건의가 성공적으로 제출되었습니다.';
+                messageElement.textContent = '성공적으로 제출되었습니다.';
                 document.getElementById('suggestion').value = '';
             } catch (error) {
-                console.error("건의 제출 중 오류 발생:", error);
-                messageElement.textContent = '건의 제출 중 오류가 발생했습니다. 나중에 다시 시도해주세요.';
+                console.error("오류 발생:", error);
+                messageElement.textContent = '오류가 발생했습니다. 나중에 다시 시도해주세요.';
             }
         });
 
