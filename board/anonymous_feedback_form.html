@@ -4,21 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>익명 건의함</title>
+    <title>to 유정</title>
     <!-- Tailwind CSS 추가 -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 
 <body class="bg-gray-100 flex items-center justify-center h-screen">
     <div class="bg-white shadow-md rounded-lg p-8 max-w-md w-full">
-        <h1 class="text-2xl font-bold mb-4">익명 건의함</h1>
+        <h1 class="text-2xl font-bold mb-4">to 유정</h1>
+        <img src="KakaoTalk_Photo_2024-08-12-21-59-59.jpeg" alt="유정" class="rounded-lg">
         <form id="suggestionForm">
-            <textarea id="suggestion" rows="4"
-                class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+            <textarea maxlength="200" placeholder="최대 200자 입력 가능" id="suggestion" rows="4"
+                class="mt-2 w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                 required></textarea>
             <br>
-            <button type="submit" class="mt-4 w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">건의
-                제출</button>
+            <button type="submit"
+                class="mt-1 w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">제출</button>
         </form>
         <p id="message" class="mt-4 text-center text-red-500"></p>
     </div>
@@ -105,7 +106,7 @@
 
                 if (lastSubmission && (now - lastSubmission) < (12 * 60 * 60 * 1000)) {
                     console.log("12시간 내 재제출 시도");
-                    messageElement.textContent = '12시간 내에 이미 건의를 제출하셨습니다. 나중에 다시 시도해주세요.';
+                    messageElement.textContent = '중복 제출 불가';
                     return;
                 }
 
