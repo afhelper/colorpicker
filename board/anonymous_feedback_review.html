@@ -4,24 +4,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>건의 확인 페이지</title>
+    <title>확인 페이지</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .suggestion-container {
+            max-width: 600px;
+            text-align: center;
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-index {
+            font-size: 1rem;
+            color: #555555;
+            margin-bottom: 1rem;
+        }
+
+        .suggestion-content {
+            font-size: 1.5rem;
+            color: #333333;
+            margin-bottom: 1.5rem;
+        }
+
+        .suggestion-timestamp {
+            font-size: 0.875rem;
+            color: #888888;
+            margin-bottom: 2rem;
+        }
+
+        .next-button {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .next-button:hover {
+            background-color: #0056b3;
+        }
+
+        .next-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
 </head>
 
-<body class="bg-gray-100 p-4">
-    <div class="container mx-auto">
-        <h1 class="text-2xl font-bold mb-4">제출된 건의 목록</h1>
-        <div class="bg-white shadow-md rounded my-6">
-            <table class="min-w-max w-full table-auto">
-                <thead>
-                    <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-                        <th class="py-3 px-6 text-left">내용</th>
-                        <th class="py-3 px-6 text-left">제출 시간</th>
-                    </tr>
-                </thead>
-                <tbody id="suggestionsList" class="text-gray-600 text-sm font-light"></tbody>
-            </table>
-        </div>
+<body>
+    <div class="suggestion-container">
+        <div id="suggestionIndex" class="suggestion-index"></div>
+        <div id="suggestionContent" class="suggestion-content"></div>
+        <div id="suggestionTimestamp" class="suggestion-timestamp"></div>
+        <button id="nextButton" class="next-button">다음</button>
     </div>
 
     <script type="module">
@@ -49,38 +97,74 @@
         signInAnonymously(auth).then(() => {
             console.log("익명 사용자로 로그인 성공");
 
-            // Firestore에서 건의 목록 가져오기
-            const suggestionsList = document.getElementById('suggestionsList');
+            // Firestore에서 목록 가져오기
+            const suggestionIndex = document.getElementById('suggestionIndex');
+            const suggestionContent = document.getElementById('suggestionContent');
+            const suggestionTimestamp = document.getElementById('suggestionTimestamp');
+            const nextButton = document.getElementById('nextButton');
 
+            // Firestore에서 목록 가져오기
             async function loadSuggestions() {
                 try {
                     const querySnapshot = await getDocs(collection(db, 'suggestions'));
+                    const suggestionsArray = [];
+
                     querySnapshot.forEach((doc) => {
                         const suggestionData = doc.data();
-                        const suggestionElement = document.createElement('tr');
-                        suggestionElement.classList.add('border-b', 'border-gray-200', 'hover:bg-gray-100');
-
-                        const contentCell = document.createElement('td');
-                        contentCell.classList.add('py-3', 'px-6', 'text-left', 'whitespace-nowrap');
-                        contentCell.textContent = suggestionData.content;
-
-                        const timestampCell = document.createElement('td');
-                        timestampCell.classList.add('py-3', 'px-6', 'text-left', 'whitespace-nowrap');
-                        timestampCell.textContent = formatTimestamp(suggestionData.timestamp.toDate());
-
-                        suggestionElement.appendChild(contentCell);
-                        suggestionElement.appendChild(timestampCell);
-
-                        suggestionsList.appendChild(suggestionElement);
+                        suggestionsArray.push({
+                            content: suggestionData.content,
+                            timestamp: suggestionData.timestamp.toDate()
+                        });
                     });
+
+                    // 타임스탬프를 기준으로 오래된 순서로 정렬
+                    suggestionsArray.sort((a, b) => a.timestamp - b.timestamp);
+
+                    // 타임스탬프를 문자열로 변환
+                    suggestionsArray.forEach(suggestion => {
+                        suggestion.timestamp = formatTimestamp(suggestion.timestamp);
+                    });
+
+                    // 현재 인덱스 초기화
+                    let currentIndex = 0;
+                    const totalSuggestions = suggestionsArray.length;
+
+                    // 목록을 보여주는 함수
+                    function showSuggestion(index) {
+                        if (index < totalSuggestions) {
+                            suggestionIndex.textContent = `${index + 1}/${totalSuggestions}`;
+                            suggestionContent.textContent = suggestionsArray[index].content;
+                            suggestionTimestamp.textContent = `제출 시간: ${suggestionsArray[index].timestamp}`;
+                        }
+                    }
+
+                    // 첫 보여주기
+                    showSuggestion(currentIndex);
+
+                    // 버튼 클릭 시 다음 리스트를 보여줌
+                    nextButton.addEventListener('click', () => {
+                        currentIndex++;
+                        if (currentIndex < totalSuggestions) {
+                            showSuggestion(currentIndex);
+                        } else {
+                            nextButton.disabled = true; // 더 이상 리스트가 없으면 버튼 비활성화
+                            nextButton.textContent = '마지막 항목입니다';
+                        }
+                    });
+
                 } catch (error) {
-                    console.error("건의 목록을 가져오는 중 오류 발생:", error);
-                    const errorElement = document.createElement('tr');
-                    errorElement.classList.add('bg-red-100', 'text-red-700');
-                    errorElement.innerHTML = `<td colspan="2" class="py-3 px-6 text-center">건의 목록을 가져오는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.</td>`;
-                    suggestionsList.appendChild(errorElement);
+                    console.error("목록을 가져오는 중 오류 발생:", error);
+                    suggestionContent.textContent = "목록을 가져오는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.";
+                    suggestionTimestamp.textContent = "";
+                    nextButton.disabled = true;
                 }
             }
+
+
+
+
+
+
 
             loadSuggestions();
         }).catch((error) => {
@@ -89,7 +173,6 @@
 
         // Date 객체를 "YYMMDD HH:MM:SS" 형식으로 변환하는 함수
         function formatTimestamp(date) {
-            // let year = date.getFullYear().toString().slice(2);
             let year = date.getFullYear().toString();
             let month = String(date.getMonth() + 1).padStart(2, '0');
             let day = String(date.getDate()).padStart(2, '0');

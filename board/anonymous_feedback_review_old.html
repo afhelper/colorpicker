@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>건의 확인 페이지</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 p-4">
+    <div class="container mx-auto">
+        <h1 class="text-2xl font-bold mb-4">제출된 건의 목록</h1>
+        <div class="bg-white shadow-md rounded my-6">
+            <table class="min-w-max w-full table-auto">
+                <thead>
+                    <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                        <th class="py-3 px-6 text-left">내용</th>
+                        <th class="py-3 px-6 text-left">제출 시간</th>
+                    </tr>
+                </thead>
+                <tbody id="suggestionsList" class="text-gray-600 text-sm font-light"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase SDK를 모듈로 import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
+            authDomain: "submit-33eb1.firebaseapp.com",
+            projectId: "submit-33eb1",
+            storageBucket: "submit-33eb1.appspot.com",
+            messagingSenderId: "123176179541",
+            appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth();
+
+        // 익명 사용자로 로그인
+        signInAnonymously(auth).then(() => {
+            console.log("익명 사용자로 로그인 성공");
+
+            // Firestore에서 건의 목록 가져오기
+            const suggestionsList = document.getElementById('suggestionsList');
+
+            async function loadSuggestions() {
+                try {
+                    const querySnapshot = await getDocs(collection(db, 'suggestions'));
+                    querySnapshot.forEach((doc) => {
+                        const suggestionData = doc.data();
+                        const suggestionElement = document.createElement('tr');
+                        suggestionElement.classList.add('border-b', 'border-gray-200', 'hover:bg-gray-100');
+
+                        const contentCell = document.createElement('td');
+                        contentCell.classList.add('py-3', 'px-6', 'text-left', 'whitespace-nowrap');
+                        contentCell.textContent = suggestionData.content;
+
+                        const timestampCell = document.createElement('td');
+                        timestampCell.classList.add('py-3', 'px-6', 'text-left', 'whitespace-nowrap');
+                        timestampCell.textContent = formatTimestamp(suggestionData.timestamp.toDate());
+
+                        suggestionElement.appendChild(contentCell);
+                        suggestionElement.appendChild(timestampCell);
+
+                        suggestionsList.appendChild(suggestionElement);
+                    });
+                } catch (error) {
+                    console.error("건의 목록을 가져오는 중 오류 발생:", error);
+                    const errorElement = document.createElement('tr');
+                    errorElement.classList.add('bg-red-100', 'text-red-700');
+                    errorElement.innerHTML = `<td colspan="2" class="py-3 px-6 text-center">건의 목록을 가져오는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.</td>`;
+                    suggestionsList.appendChild(errorElement);
+                }
+            }
+
+            loadSuggestions();
+        }).catch((error) => {
+            console.error("익명 사용자로 로그인 중 오류 발생:", error);
+        });
+
+        // Date 객체를 "YYMMDD HH:MM:SS" 형식으로 변환하는 함수
+        function formatTimestamp(date) {
+            // let year = date.getFullYear().toString().slice(2);
+            let year = date.getFullYear().toString();
+            let month = String(date.getMonth() + 1).padStart(2, '0');
+            let day = String(date.getDate()).padStart(2, '0');
+            let hours = String(date.getHours()).padStart(2, '0');
+            let minutes = String(date.getMinutes()).padStart(2, '0');
+            let seconds = String(date.getSeconds()).padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+    </script>
+</body>
+
+</html>
