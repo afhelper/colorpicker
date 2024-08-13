@@ -6,9 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>to 유정</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .h-screen {
+            height: 100vh;
+            /* 기본적으로 100vh 사용 */
+            height: 100dvh !important;
+            /* dvh 지원 브라우저에서는 dvh 사용 */
+            /* touch-action: manipulation; */
+        }
+    </style>
 </head>
 
-<body class="flex items-center justify-center min-h-screen bg-gray-100">
+<body class="flex items-center justify-center min-h-screen bg-gray-100 h-screen">
     <div class="w-full max-w-md p-8 space-y-2 bg-white rounded-lg shadow-md">
         <h2 class="text-2xl font-bold text-center text-gray-700">to 유정</h2>
 
