@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>확인 페이지</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .suggestion-container {
+            max-width: 600px;
+            text-align: center;
+            background-color: #ffffff;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-index {
+            font-size: 1rem;
+            color: #555555;
+            margin-bottom: 1rem;
+        }
+
+        .suggestion-content {
+            font-size: 1.5rem;
+            color: #333333;
+            margin-bottom: 1.5rem;
+        }
+
+        .suggestion-timestamp {
+            font-size: 0.875rem;
+            color: #888888;
+            margin-bottom: 2rem;
+        }
+
+        .next-button {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .next-button:hover {
+            background-color: #0056b3;
+        }
+
+        .next-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="suggestion-container">
+        <div id="suggestionIndex" class="suggestion-index"></div>
+        <div id="suggestionContent" class="suggestion-content"></div>
+        <div id="suggestionTimestamp" class="suggestion-timestamp"></div>
+        <button id="nextButton" class="next-button">다음</button>
+    </div>
+
+    <script type="module">
+        // Firebase SDK를 모듈로 import
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
+            authDomain: "submit-33eb1.firebaseapp.com",
+            projectId: "submit-33eb1",
+            storageBucket: "submit-33eb1.appspot.com",
+            messagingSenderId: "123176179541",
+            appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
+        };
+
+        // Firebase 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth();
+
+        // 익명 사용자로 로그인
+        signInAnonymously(auth).then(() => {
+            console.log("익명 사용자로 로그인 성공");
+
+            // Firestore에서 목록 가져오기
+            const suggestionIndex = document.getElementById('suggestionIndex');
+            const suggestionContent = document.getElementById('suggestionContent');
+            const suggestionTimestamp = document.getElementById('suggestionTimestamp');
+            const nextButton = document.getElementById('nextButton');
+
+            // Firestore에서 목록 가져오기
+            async function loadSuggestions() {
+                try {
+                    const querySnapshot = await getDocs(collection(db, 'suggestions'));
+                    const suggestionsArray = [];
+
+                    querySnapshot.forEach((doc) => {
+                        const suggestionData = doc.data();
+                        suggestionsArray.push({
+                            content: suggestionData.content,
+                            timestamp: suggestionData.timestamp.toDate()
+                        });
+                    });
+
+                    // 타임스탬프를 기준으로 오래된 순서로 정렬
+                    suggestionsArray.sort((a, b) => a.timestamp - b.timestamp);
+
+                    // 타임스탬프를 문자열로 변환
+                    suggestionsArray.forEach(suggestion => {
+                        suggestion.timestamp = formatTimestamp(suggestion.timestamp);
+                    });
+
+                    // 현재 인덱스 초기화
+                    let currentIndex = 0;
+                    const totalSuggestions = suggestionsArray.length;
+
+                    // 목록을 보여주는 함수
+                    function showSuggestion(index) {
+                        if (index < totalSuggestions) {
+                            suggestionIndex.textContent = `${index + 1}/${totalSuggestions}`;
+                            suggestionContent.textContent = suggestionsArray[index].content;
+                            suggestionTimestamp.textContent = `제출 시간: ${suggestionsArray[index].timestamp}`;
+                        }
+                    }
+
+                    // 첫 보여주기
+                    showSuggestion(currentIndex);
+
+                    // 버튼 클릭 시 다음 리스트를 보여줌
+                    nextButton.addEventListener('click', () => {
+                        currentIndex++;
+                        if (currentIndex < totalSuggestions) {
+                            showSuggestion(currentIndex);
+                        } else {
+                            nextButton.disabled = true; // 더 이상 리스트가 없으면 버튼 비활성화
+                            nextButton.textContent = '마지막 항목입니다';
+                        }
+                    });
+
+                } catch (error) {
+                    console.error("목록을 가져오는 중 오류 발생:", error);
+                    suggestionContent.textContent = "목록을 가져오는 중 오류가 발생했습니다. 나중에 다시 시도해주세요.";
+                    suggestionTimestamp.textContent = "";
+                    nextButton.disabled = true;
+                }
+            }
+
+
+
+
+
+
+
+            loadSuggestions();
+        }).catch((error) => {
+            console.error("익명 사용자로 로그인 중 오류 발생:", error);
+        });
+
+        // Date 객체를 "YYMMDD HH:MM:SS" 형식으로 변환하는 함수
+        function formatTimestamp(date) {
+            let year = date.getFullYear().toString();
+            let month = String(date.getMonth() + 1).padStart(2, '0');
+            let day = String(date.getDate()).padStart(2, '0');
+            let hours = String(date.getHours()).padStart(2, '0');
+            let minutes = String(date.getMinutes()).padStart(2, '0');
+            let seconds = String(date.getSeconds()).padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+    </script>
+</body>
+
+</html>
