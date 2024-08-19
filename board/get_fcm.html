@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCM 토큰 발급</title>
+</head>
+
+<body>
+    <h1>FCM 토큰 발급 페이지</h1>
+    <p>콘솔을 확인하여 FCM 토큰을 확인하세요.</p>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-messaging-compat.js"></script>
+    <script>
+        // Firebase 구성
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
+            authDomain: "submit-33eb1.firebaseapp.com",
+            projectId: "submit-33eb1",
+            storageBucket: "submit-33eb1.appspot.com",
+            messagingSenderId: "123176179541",
+            appId: "1:123176179541:web:c40f2392c8b95fb93601dc"
+        };
+
+        // Firebase 초기화
+        firebase.initializeApp(firebaseConfig);
+        const messaging = firebase.messaging();
+        console.log('Firebase가 초기화되었습니다.');
+
+        // 서비스 워커 등록
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('firebase-messaging-sw.js')
+                .then(function (registration) {
+                    console.log('Service Worker 등록 성공:', registration.scope);
+                }).catch(function (err) {
+                    console.log('Service Worker 등록 실패:', err);
+                });
+        }
+
+        // FCM 토큰 발급 함수
+        async function requestNotificationPermissionAndGetToken() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    console.log('알림 권한이 허용되었습니다.');
+                    // FCM 토큰 가져오기
+                    const currentToken = await messaging.getToken({
+                        vapidKey: 'BN1mmgZ7wxwZSHATgl7pe_UirrGJj-ksPhMuNH9GNFdmzWEQoNs7UamL6UvNPx---MOZybWZqAIWVV7IAnqaZug'
+                    });
+                    if (currentToken) {
+                        console.log('FCM 토큰:', currentToken);
+                        // 여기서 토큰을 서버에 전송하거나 필요한 작업을 수행할 수 있습니다.
+                    } else {
+                        console.log('토큰을 가져올 수 없습니다. 권한을 다시 요청해야 할 수 있습니다.');
+                    }
+                } else {
+                    console.log('알림 권한이 거부되었습니다.');
+                }
+            } catch (err) {
+                console.error('토큰을 가져오는 중 오류가 발생했습니다:', err);
+                // 추가적인 오류 정보 로깅
+                console.error('오류 세부 정보:', err.code, err.message);
+            }
+        }
+
+        // 페이지 로드 시 함수 실행
+        window.addEventListener('load', requestNotificationPermissionAndGetToken);
+    </script>
+</body>
+
+</html>
