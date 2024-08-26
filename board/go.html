@@ -138,7 +138,7 @@
 
             async function loadSuggestions() {
                 try {
-                    const querySnapshot = await getDocs(collection(db, 'suggestions'));
+                    const querySnapshot = await getDocs(collection(db, 'suggestions2'));
                     const suggestionsArray = [];
 
                     querySnapshot.forEach((doc) => {
