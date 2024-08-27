@@ -150,9 +150,9 @@
                 const lastSubmission = await getLastSubmission(userIdentifier);
                 const now = new Date();
 
-                if (lastSubmission && (now - lastSubmission) < (12 * 60 * 60 * 1000)) {
-                    console.log("12시간 내 재제출 시도");
-                    alert('중복 제출 불가');
+                if (lastSubmission && (now - lastSubmission) < (5 * 60 * 1000)) {
+                    console.log("5분 내 재제출 시도");
+                    alert('5분 쿨타임');
                     submitButton.disabled = false;  // 제출 버튼 다시 활성화
                     spinner.classList.add('hidden');  // 스피너 숨기기
                     buttonText.classList.remove('hidden');  // 텍스트 복구
