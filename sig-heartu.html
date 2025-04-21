@@ -16,6 +16,11 @@
     body {
       font-family: 'yg-jalnan', sans-serif;
     }
+
+    .number-part {
+      color: #FF6B6B;
+      /* 원하는 색상으로 변경 가능 */
+    }
   </style>
 
   <title>하트유 뉴시그 가이드 ~250422</title>
@@ -259,7 +264,22 @@
       const details = card.querySelector('div.text-sm');
       details.classList.toggle('hidden');
     }
+
+    // 페이지 로드 시 모든 카드 제목에서 숫자 부분만 색상 변경
+    document.addEventListener('DOMContentLoaded', function () {
+      const titles = document.querySelectorAll('.font-semibold.text-lg');
+
+      titles.forEach(title => {
+        const text = title.textContent;
+        // 첫 번째 공백을 기준으로 분리 (정규식 사용)
+        const [numberPart, titlePart] = text.split(/\s+(.*)/);
+
+        // 숫자 부분에 색상 적용
+        title.innerHTML = `<span class="number-part">${numberPart}</span> ${titlePart}`;
+      });
+    });
   </script>
+
 </body>
 
 </html>
