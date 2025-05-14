@@ -13,14 +13,10 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            /* 드래그 중 텍스트 선택 방지 */
             user-select: none;
             -webkit-user-select: none;
-            /* Safari/Chrome용 */
             -moz-user-select: none;
-            /* Firefox용 */
             -ms-user-select: none;
-            /* IE/Edge용 */
         }
 
         iframe {
@@ -29,27 +25,26 @@
         }
 
         .chat {
-            flex-grow: 3;
-            /* 초기 비율 3 (60%) */
+            flex-grow: 7;
+            /* 초기 비율 7 (70%) */
             flex-shrink: 1;
             flex-basis: 0%;
             overflow: hidden;
         }
 
         .divider {
-            height: 10px;
-            /* 터치하기 쉽도록 구분선 두께 조금 더 증가 */
+            height: 3px;
+            /* 구분선 두께 수정됨 (5px -> 3px) */
             background-color: #ccc;
             width: 100%;
             cursor: row-resize;
             z-index: 10;
-            /* 터치 액션 시 브라우저 기본 확대/축소 방지 (iOS) */
             touch-action: none;
         }
 
         .donation {
-            flex-grow: 2;
-            /* 초기 비율 2 (40%) */
+            flex-grow: 3;
+            /* 초기 비율 3 (30%) */
             flex-shrink: 1;
             flex-basis: 0%;
             overflow: hidden;
@@ -173,14 +168,12 @@
 
         loadUrlsFromStorage();
 
-        // --- 구분선 드래그 기능 (데스크탑 & 모바일 터치 지원) ---
         let isResizing = false;
 
         function dragStart(e) {
-            // e.preventDefault(); // 여기서 호출하면 터치 시 클릭 이벤트 등이 막힐 수 있으므로, move에서 필요시 호출
             isResizing = true;
 
-            document.body.style.userSelect = 'none'; // 드래그 중 텍스트 선택 방지
+            document.body.style.userSelect = 'none';
             document.body.style.webkitUserSelect = 'none';
             document.body.style.cursor = 'row-resize';
             chatFrame.style.pointerEvents = 'none';
@@ -190,17 +183,15 @@
                 document.addEventListener('mousemove', dragMove);
                 document.addEventListener('mouseup', dragEnd);
             } else if (e.type === 'touchstart') {
-                // touchmove에서 preventDefault를 호출하려면 passive: false 설정 필요
                 document.addEventListener('touchmove', dragMove, { passive: false });
                 document.addEventListener('touchend', dragEnd);
-                document.addEventListener('touchcancel', dragEnd); // 터치 취소 시에도 종료 처리
+                document.addEventListener('touchcancel', dragEnd);
             }
         }
 
         function dragMove(e) {
             if (!isResizing) return;
 
-            // touchmove 중 스크롤 같은 기본 동작 방지
             if (e.type === 'touchmove') {
                 e.preventDefault();
             }
@@ -211,7 +202,7 @@
             let newChatHeight = clientY - bodyRect.top;
             let newDonationHeight = document.body.clientHeight - newChatHeight - divider.offsetHeight;
 
-            const minHeight = 30;
+            const minHeight = 30; // 각 프레임의 최소 높이
             if (newChatHeight < minHeight) {
                 newChatHeight = minHeight;
                 newDonationHeight = document.body.clientHeight - newChatHeight - divider.offsetHeight;
@@ -219,14 +210,17 @@
             if (newDonationHeight < minHeight) {
                 newDonationHeight = minHeight;
                 newChatHeight = document.body.clientHeight - newDonationHeight - divider.offsetHeight;
+                // donationHeight가 minHeight가 되면 chatHeight도 그에 맞게 재조정
+                if (newChatHeight < minHeight) newChatHeight = minHeight; // 혹시 모를 상황 대비
             }
+
 
             chatFrame.style.flexGrow = newChatHeight;
             donationFrame.style.flexGrow = newDonationHeight;
         }
 
         function dragEnd(e) {
-            if (!isResizing) return; // 이미 종료된 경우 중복 실행 방지
+            if (!isResizing) return;
             isResizing = false;
 
             document.body.style.userSelect = 'auto';
@@ -235,10 +229,10 @@
             chatFrame.style.pointerEvents = 'auto';
             donationFrame.style.pointerEvents = 'auto';
 
-            if (e.type === 'mouseup' || e.type === 'mouseleave') { // mouseleave는 마우스가 창 밖으로 나갔을 때
+            if (e.type === 'mouseup' || e.type === 'mouseleave') {
                 document.removeEventListener('mousemove', dragMove);
                 document.removeEventListener('mouseup', dragEnd);
-            } else if (e.type.startsWith('touch')) { // touchend, touchcancel
+            } else if (e.type.startsWith('touch')) {
                 document.removeEventListener('touchmove', dragMove);
                 document.removeEventListener('touchend', dragEnd);
                 document.removeEventListener('touchcancel', dragEnd);
@@ -247,10 +241,6 @@
 
         divider.addEventListener('mousedown', dragStart);
         divider.addEventListener('touchstart', dragStart, { passive: true });
-        // touchstart의 passive는 true로 두어 스크롤 시작 가능성을 열어두되, 
-        // dragMove에서 필요에 따라 preventDefault()를 호출하도록 함.
-        // 만약 touchstart부터 스크롤을 막고 싶다면 false로. 여기선 dragMove에서 제어.
-
     </script>
 </body>
 
