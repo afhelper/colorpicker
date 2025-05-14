@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>위플랩 오버레이</title>
     <style>
         body {
@@ -13,32 +13,46 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
         }
 
         iframe {
             border: none;
             width: 100%;
+            height: 100%;
+            /* iframe이 할당된 공간을 꽉 채우도록 추가 */
         }
 
         .chat {
-            flex: 3;
-            /* 채팅창이 3/4 차지 */
+            flex-grow: 7;
+            flex-shrink: 1;
+            flex-basis: 0%;
+            overflow: auto;
+            /* hidden에서 auto로 변경 또는 이 줄을 삭제해봐도 돼 */
+            /* height: 0;  만약 flex-basis가 제대로 안먹히면 이걸로 테스트해볼수도 있지만, 지금은 필요 없을듯 */
         }
 
         .divider {
-            height: 2px;
-            /* 구분선 두께 */
+            height: 3px;
             background-color: #ccc;
-            /* 구분선 색상 (원하는 색으로 변경 가능) */
             width: 100%;
+            cursor: row-resize;
+            z-index: 10;
+            touch-action: none;
         }
 
         .donation {
-            flex: 1;
-            /* 후원창이 1/4 차지 */
+            flex-grow: 3;
+            flex-shrink: 1;
+            flex-basis: 0%;
+            overflow: auto;
+            /* 여기도 일관성을 위해 auto로 변경 또는 삭제 */
         }
 
-        /* URL 입력창 스타일 (선택 사항) */
+        /* ... 이하 동일 ... */
         #urlPrompt {
             position: fixed;
             top: 0;
@@ -104,11 +118,12 @@
             <input type="url" id="donationUrlInput" placeholder="https://weflab.com/page/...">
         </div>
         <button onclick="saveAndLoadUrls()">URL 저장 및 오버레이 로드</button>
-        <p style="font-size: 0.8em; margin-top: 20px;">이 URL들은 아이폰 브라우저에 저장되어 다음 접속 시 자동으로 로드됩니다.</p>
+        <p style="font-size: 0.8em; margin-top: 20px;">이 URL들은 브라우저에 저장되어 다음 접속 시 자동으로 로드됩니다.</p>
     </div>
 
     <iframe id="chatFrame" class="chat" allowtransparency="true"></iframe>
-    <div class="divider"></div> <iframe id="donationFrame" class="donation" allowtransparency="true"></iframe>
+    <div class="divider"></div>
+    <iframe id="donationFrame" class="donation" allowtransparency="true"></iframe>
 
     <script>
         const chatFrame = document.getElementById('chatFrame');
@@ -116,6 +131,7 @@
         const urlPromptDiv = document.getElementById('urlPrompt');
         const chatUrlInput = document.getElementById('chatUrlInput');
         const donationUrlInput = document.getElementById('donationUrlInput');
+        const divider = document.querySelector('.divider');
 
         function loadUrlsFromStorage() {
             const storedChatUrl = localStorage.getItem('weflabChatUrl');
@@ -124,11 +140,9 @@
             if (storedChatUrl && storedDonationUrl) {
                 chatFrame.src = storedChatUrl;
                 donationFrame.src = storedDonationUrl;
-                urlPromptDiv.style.display = 'none'; // URL 있으면 입력창 숨김
+                urlPromptDiv.style.display = 'none';
             } else {
-                // URL 없으면 입력창 표시
                 urlPromptDiv.style.display = 'flex';
-                // 기존에 저장된 값이 있으면 입력 필드에 미리 채워넣기
                 if (storedChatUrl) chatUrlInput.value = storedChatUrl;
                 if (storedDonationUrl) donationUrlInput.value = storedDonationUrl;
             }
@@ -140,13 +154,10 @@
 
             if (chatUrl && donationUrl) {
                 try {
-                    // URL 유효성 검사 (간단하게)
                     new URL(chatUrl);
                     new URL(donationUrl);
-
                     localStorage.setItem('weflabChatUrl', chatUrl);
                     localStorage.setItem('weflabDonationUrl', donationUrl);
-
                     chatFrame.src = chatUrl;
                     donationFrame.src = donationUrl;
                     urlPromptDiv.style.display = 'none';
@@ -158,8 +169,80 @@
             }
         }
 
-        // 페이지 로드 시 URL 불러오기 시도
         loadUrlsFromStorage();
+
+        let isResizing = false;
+
+        function dragStart(e) {
+            isResizing = true;
+
+            document.body.style.userSelect = 'none';
+            document.body.style.webkitUserSelect = 'none';
+            document.body.style.cursor = 'row-resize';
+            chatFrame.style.pointerEvents = 'none';
+            donationFrame.style.pointerEvents = 'none';
+
+            if (e.type === 'mousedown') {
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('mouseup', dragEnd);
+            } else if (e.type === 'touchstart') {
+                document.addEventListener('touchmove', dragMove, { passive: false });
+                document.addEventListener('touchend', dragEnd);
+                document.addEventListener('touchcancel', dragEnd);
+            }
+        }
+
+        function dragMove(e) {
+            if (!isResizing) return;
+
+            if (e.type === 'touchmove') {
+                e.preventDefault();
+            }
+
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
+            const bodyRect = document.body.getBoundingClientRect();
+
+            let newChatHeight = clientY - bodyRect.top;
+            let newDonationHeight = document.body.clientHeight - newChatHeight - divider.offsetHeight;
+
+            const minHeight = 30;
+            if (newChatHeight < minHeight) {
+                newChatHeight = minHeight;
+                newDonationHeight = document.body.clientHeight - newChatHeight - divider.offsetHeight;
+            }
+            if (newDonationHeight < minHeight) {
+                newDonationHeight = minHeight;
+                newChatHeight = document.body.clientHeight - newDonationHeight - divider.offsetHeight;
+                if (newChatHeight < minHeight) newChatHeight = minHeight;
+            }
+
+
+            chatFrame.style.flexGrow = newChatHeight;
+            donationFrame.style.flexGrow = newDonationHeight;
+        }
+
+        function dragEnd(e) {
+            if (!isResizing) return;
+            isResizing = false;
+
+            document.body.style.userSelect = 'auto';
+            document.body.style.webkitUserSelect = 'auto';
+            document.body.style.cursor = 'default';
+            chatFrame.style.pointerEvents = 'auto';
+            donationFrame.style.pointerEvents = 'auto';
+
+            if (e.type === 'mouseup' || e.type === 'mouseleave') {
+                document.removeEventListener('mousemove', dragMove);
+                document.removeEventListener('mouseup', dragEnd);
+            } else if (e.type.startsWith('touch')) {
+                document.removeEventListener('touchmove', dragMove);
+                document.removeEventListener('touchend', dragEnd);
+                document.removeEventListener('touchcancel', dragEnd);
+            }
+        }
+
+        divider.addEventListener('mousedown', dragStart);
+        divider.addEventListener('touchstart', dragStart, { passive: true });
     </script>
 </body>
 
