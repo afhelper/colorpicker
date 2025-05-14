@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>위플랩 오버레이</title>
     <style>
         body {
@@ -13,8 +13,14 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            /* 드래그 중 텍스트 선택 방지 (JS에서도 제어) */
+            /* 드래그 중 텍스트 선택 방지 */
             user-select: none;
+            -webkit-user-select: none;
+            /* Safari/Chrome용 */
+            -moz-user-select: none;
+            /* Firefox용 */
+            -ms-user-select: none;
+            /* IE/Edge용 */
         }
 
         iframe {
@@ -27,21 +33,18 @@
             /* 초기 비율 3 (60%) */
             flex-shrink: 1;
             flex-basis: 0%;
-            /* 크기를 flex-grow 비율로 결정 */
             overflow: hidden;
-            /* 내용 넘침 방지 */
         }
 
         .divider {
-            height: 5px;
-            /* 구분선 두께 (조금 더 두껍게 해서 잡기 쉽게) */
+            height: 10px;
+            /* 터치하기 쉽도록 구분선 두께 조금 더 증가 */
             background-color: #ccc;
-            /* 구분선 색상 */
             width: 100%;
             cursor: row-resize;
-            /* 마우스 오버 시 커서 변경 */
             z-index: 10;
-            /* 다른 요소보다 위에 있도록 */
+            /* 터치 액션 시 브라우저 기본 확대/축소 방지 (iOS) */
+            touch-action: none;
         }
 
         .donation {
@@ -49,12 +52,9 @@
             /* 초기 비율 2 (40%) */
             flex-shrink: 1;
             flex-basis: 0%;
-            /* 크기를 flex-grow 비율로 결정 */
             overflow: hidden;
-            /* 내용 넘침 방지 */
         }
 
-        /* URL 입력창 스타일 (선택 사항) */
         #urlPrompt {
             position: fixed;
             top: 0;
@@ -120,7 +120,7 @@
             <input type="url" id="donationUrlInput" placeholder="https://weflab.com/page/...">
         </div>
         <button onclick="saveAndLoadUrls()">URL 저장 및 오버레이 로드</button>
-        <p style="font-size: 0.8em; margin-top: 20px;">이 URL들은 아이폰 브라우저에 저장되어 다음 접속 시 자동으로 로드됩니다.</p>
+        <p style="font-size: 0.8em; margin-top: 20px;">이 URL들은 브라우저에 저장되어 다음 접속 시 자동으로 로드됩니다.</p>
     </div>
 
     <iframe id="chatFrame" class="chat" allowtransparency="true"></iframe>
@@ -158,10 +158,8 @@
                 try {
                     new URL(chatUrl);
                     new URL(donationUrl);
-
                     localStorage.setItem('weflabChatUrl', chatUrl);
                     localStorage.setItem('weflabDonationUrl', donationUrl);
-
                     chatFrame.src = chatUrl;
                     donationFrame.src = donationUrl;
                     urlPromptDiv.style.display = 'none';
@@ -175,35 +173,44 @@
 
         loadUrlsFromStorage();
 
-        // --- 구분선 드래그 기능 ---
+        // --- 구분선 드래그 기능 (데스크탑 & 모바일 터치 지원) ---
         let isResizing = false;
 
-        divider.addEventListener('mousedown', function (e) {
-            e.preventDefault(); // 브라우저 기본 드래그 동작 방지
+        function dragStart(e) {
+            // e.preventDefault(); // 여기서 호출하면 터치 시 클릭 이벤트 등이 막힐 수 있으므로, move에서 필요시 호출
             isResizing = true;
 
-            // 드래그 중 iframe 위로 마우스가 가도 이벤트 계속 받도록 설정
+            document.body.style.userSelect = 'none'; // 드래그 중 텍스트 선택 방지
+            document.body.style.webkitUserSelect = 'none';
+            document.body.style.cursor = 'row-resize';
             chatFrame.style.pointerEvents = 'none';
             donationFrame.style.pointerEvents = 'none';
-            document.body.style.cursor = 'row-resize'; // 전체 body 커서 변경
 
-            document.addEventListener('mousemove', handleResize);
-            document.addEventListener('mouseup', stopResize);
-        });
+            if (e.type === 'mousedown') {
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('mouseup', dragEnd);
+            } else if (e.type === 'touchstart') {
+                // touchmove에서 preventDefault를 호출하려면 passive: false 설정 필요
+                document.addEventListener('touchmove', dragMove, { passive: false });
+                document.addEventListener('touchend', dragEnd);
+                document.addEventListener('touchcancel', dragEnd); // 터치 취소 시에도 종료 처리
+            }
+        }
 
-        function handleResize(e) {
+        function dragMove(e) {
             if (!isResizing) return;
 
+            // touchmove 중 스크롤 같은 기본 동작 방지
+            if (e.type === 'touchmove') {
+                e.preventDefault();
+            }
+
+            const clientY = e.type.startsWith('touch') ? e.touches[0].clientY : e.clientY;
             const bodyRect = document.body.getBoundingClientRect();
 
-            // 마우스 Y 위치에 따라 새 채팅창 높이 계산
-            // body의 top 부터 마우스 커서까지의 거리를 새 채팅창의 높이로 사용
-            let newChatHeight = e.clientY - bodyRect.top;
-
-            // 새 후원창 높이 (전체 body 높이 - 새 채팅창 높이 - 구분선 높이)
+            let newChatHeight = clientY - bodyRect.top;
             let newDonationHeight = document.body.clientHeight - newChatHeight - divider.offsetHeight;
 
-            // 최소 높이 제한 (예: 30px)
             const minHeight = 30;
             if (newChatHeight < minHeight) {
                 newChatHeight = minHeight;
@@ -214,23 +221,36 @@
                 newChatHeight = document.body.clientHeight - newDonationHeight - divider.offsetHeight;
             }
 
-            // flex-grow 값은 비율이므로, 계산된 높이 값을 직접 할당하여
-            // 해당 높이 비율대로 공간을 차지하도록 함 (flex-basis: 0% 일 때)
             chatFrame.style.flexGrow = newChatHeight;
             donationFrame.style.flexGrow = newDonationHeight;
         }
 
-        function stopResize() {
+        function dragEnd(e) {
+            if (!isResizing) return; // 이미 종료된 경우 중복 실행 방지
             isResizing = false;
 
-            // 드래그 종료 시 iframe 이벤트 원래대로 복구
+            document.body.style.userSelect = 'auto';
+            document.body.style.webkitUserSelect = 'auto';
+            document.body.style.cursor = 'default';
             chatFrame.style.pointerEvents = 'auto';
             donationFrame.style.pointerEvents = 'auto';
-            document.body.style.cursor = 'default'; // body 커서 원래대로
 
-            document.removeEventListener('mousemove', handleResize);
-            document.removeEventListener('mouseup', stopResize);
+            if (e.type === 'mouseup' || e.type === 'mouseleave') { // mouseleave는 마우스가 창 밖으로 나갔을 때
+                document.removeEventListener('mousemove', dragMove);
+                document.removeEventListener('mouseup', dragEnd);
+            } else if (e.type.startsWith('touch')) { // touchend, touchcancel
+                document.removeEventListener('touchmove', dragMove);
+                document.removeEventListener('touchend', dragEnd);
+                document.removeEventListener('touchcancel', dragEnd);
+            }
         }
+
+        divider.addEventListener('mousedown', dragStart);
+        divider.addEventListener('touchstart', dragStart, { passive: true });
+        // touchstart의 passive는 true로 두어 스크롤 시작 가능성을 열어두되, 
+        // dragMove에서 필요에 따라 preventDefault()를 호출하도록 함.
+        // 만약 touchstart부터 스크롤을 막고 싶다면 false로. 여기선 dragMove에서 제어.
+
     </script>
 </body>
 
