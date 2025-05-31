@@ -1,0 +1,45 @@
+/* 모달 기본 스타일 */
+.modal {
+    transition: opacity 0.25s ease;
+}
+
+.modal-active {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.modal-content {
+    transition: transform 0.25s ease;
+}
+
+/* 일반 YouTube 영상 (16:9) */
+.aspect-w-16 {
+    position: relative;
+    padding-bottom: 56.25%;
+    /* 16:9 비율 */
+}
+
+.aspect-h-9>iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* YouTube Shorts 영상 컨테이너 (세로 비율 유지 시도) */
+.youtube-shorts-container {
+    width: 320px;
+    /* 예시 너비, 필요에 따라 조절 */
+    height: 568px;
+    /* 예시 높이, 9:16 비율에 가까운 값 */
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    /* iframe이 컨테이너를 벗어나지 않도록 */
+}
+
+.youtube-shorts-container iframe {
+    width: 100%;
+    height: 100%;
+}
