@@ -39,44 +39,20 @@
         /* YouTube Shorts 영상 컨테이너 (세로 비율 유지 시도) */
         .youtube-shorts-container {
             width: 320px;
-            /* 숏츠 영상에 적절한 너비 (예시) */
             height: 568px;
-            /* 너비에 따른 9:16 비율 높이 (320 * 16 / 9) */
             margin-left: auto;
             margin-right: auto;
             overflow: hidden;
-            /* iframe이 넘치지 않도록 */
         }
 
         .youtube-shorts-container iframe {
             width: 100%;
             height: 100%;
         }
-
-        /* FAB 액션 버튼 트랜지션 및 초기 상태 */
-        #fabActions {
-            /* 기본적으로 위로 살짝 이동하면서 나타나도록 설정 */
-            /* transform: translateY(10px); */
-            /* 초기 위치 조정 (선택사항) */
-            /* 기본 상태는 아래로 내려가고 투명하게 */
-            transform: translateY(100%);
-            /* 시작 시 아래로 많이 내려가 있도록 */
-            margin-bottom: 0.5rem;
-            /* FAB 버튼과의 간격 */
-            right: 0.5rem;
-            /* FAB 버튼 기준으로 오른쪽 정렬 */
-        }
-
-        #fabActions.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateY(-100%) translateY(-0.5rem);
-            /* 위로 올라오면서 FAB 버튼 위에 위치 */
-        }
     </style>
 </head>
 
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen py-6 sm:py-10 px-2 sm:px-4">
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen py-6 px-2 sm:px-4">
 
     <div id="loginFormContainer" class="bg-white p-6 sm:p-8 rounded-lg shadow-md w-full sm:max-w-sm mb-8">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">로그인</h2>
@@ -96,25 +72,25 @@
         <div id="message" class="mt-4 text-sm text-center"></div>
     </div>
 
-    <div id="dataSection" class="bg-white p-4 sm:p-6 rounded-lg shadow-md w-full md:max-w-2xl hidden">
+    <div id="dataSection" class="bg-white p-4 rounded-lg shadow-md w-full md:max-w-2xl hidden">
         <div id="musicListContainer" class="space-y-4">
         </div>
     </div>
 
     <div id="fabContainer" class="fixed bottom-6 right-6 z-40 hidden">
         <div id="fabActions"
-            class="absolute bottom-full right-0 flex flex-col items-center space-y-2 mb-2 opacity-0 pointer-events-none transition-all duration-300 ease-out">
+            class="absolute bottom-full right-0 flex flex-col items-center space-y-2 mb-2 opacity-0 pointer-events-none transform translate-y-4 transition-all duration-300 ease-out z-60">
             <button id="openAddMusicFab" title="글쓰기"
-                class="bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md w-12 h-12 flex items-center justify-center transition-transform hover:scale-110">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                class="bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md w-16 h-16 flex items-center justify-center transition-transform hover:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
             </button>
             <button id="logoutFab" title="로그아웃"
-                class="bg-slate-500 hover:bg-slate-600 text-white rounded-full shadow-md w-12 h-12 flex items-center justify-center transition-transform hover:scale-110">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                class="bg-slate-500 hover:bg-slate-600 text-white rounded-full shadow-md w-16 h-16 flex items-center justify-center transition-transform hover:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -227,7 +203,6 @@
         const addMusicMessage = document.getElementById('addMusicMessage');
         const FIXED_EMAIL = "admin@admin.com";
 
-        // New FAB Elements
         const fabContainer = document.getElementById('fabContainer');
         const fabButton = document.getElementById('fabButton');
         const fabIconPlus = document.getElementById('fabIconPlus');
@@ -242,25 +217,24 @@
         function updateUI(user) {
             if (user) {
                 loginFormContainer.classList.add('hidden');
-                fabContainer.classList.remove('hidden'); // FAB 컨테이너 보이기
+                fabContainer.classList.remove('hidden');
                 dataSectionDiv.classList.remove('hidden');
                 loadAndDisplayMusicData();
             } else {
                 loginFormContainer.classList.remove('hidden');
-                fabContainer.classList.add('hidden'); // FAB 컨테이너 숨기기
+                fabContainer.classList.add('hidden');
                 dataSectionDiv.classList.add('hidden');
                 musicListContainer.innerHTML = '';
                 messageDiv.textContent = '';
                 if (typeof grecaptcha !== 'undefined') {
                     grecaptcha.reset();
                 }
-                // FAB 액션 닫기 (로그아웃 시)
-                if (fabOpen) {
-                    fabActions.classList.remove('opacity-100', 'pointer-events-auto');
-                    fabActions.classList.add('opacity-0', 'pointer-events-none');
+                if (fabOpen) { // 로그아웃 시 FAB 메뉴가 열려있으면 닫기
+                    fabActions.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
+                    fabActions.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
                     fabIconPlus.classList.remove('hidden');
                     fabIconClose.classList.add('hidden');
-                    fabButton.classList.remove('rotate-180'); // 원래대로
+                    // fabButton.classList.remove('rotate-[360deg]'); // 회전 애니메이션은 아이콘 교체로 대체
                     fabOpen = false;
                 }
             }
@@ -276,33 +250,27 @@
         fabButton.addEventListener('click', () => {
             fabOpen = !fabOpen;
             if (fabOpen) {
-                fabActions.classList.remove('opacity-0', 'pointer-events-none');
-                fabActions.classList.add('opacity-100', 'pointer-events-auto');
-                // FAB 버튼 아이콘 변경 (+) -> (X)
+                fabActions.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+                fabActions.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
                 fabIconPlus.classList.add('hidden');
                 fabIconClose.classList.remove('hidden');
-                fabButton.classList.add('rotate-180'); // 애니메이션 효과
             } else {
-                fabActions.classList.add('opacity-0', 'pointer-events-none');
-                fabActions.classList.remove('opacity-100', 'pointer-events-auto');
-                // FAB 버튼 아이콘 변경 (X) -> (+)
+                fabActions.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+                fabActions.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
                 fabIconPlus.classList.remove('hidden');
                 fabIconClose.classList.add('hidden');
-                fabButton.classList.remove('rotate-180');
             }
         });
 
         // 글쓰기 FAB 클릭 이벤트
         openAddMusicFab.addEventListener('click', () => {
             openModal();
-            // 액션 버튼 클릭 후 FAB 메뉴 닫기
-            if (fabOpen) fabButton.click();
+            if (fabOpen) fabButton.click(); // FAB 메뉴 닫기
         });
 
         // 로그아웃 FAB 클릭 이벤트
         logoutFab.addEventListener('click', async () => {
-            // 액션 버튼 클릭 후 FAB 메뉴 닫기 (로그아웃 전에)
-            if (fabOpen) fabButton.click();
+            if (fabOpen) fabButton.click(); // FAB 메뉴 닫기
             try {
                 await signOut(auth);
             } catch (error) {
@@ -310,7 +278,6 @@
                 alert("로그아웃 중 오류가 발생했습니다.");
             }
         });
-
 
         async function loadAndDisplayMusicData() {
             musicListContainer.innerHTML = '<p class="text-center text-gray-500">음악 목록을 불러오는 중...</p>';
@@ -335,7 +302,6 @@
             }
         }
 
-        // YouTube 영상 ID 및 Shorts 여부 추출 함수
         function getYouTubeVideoInfo(url) {
             if (!url) return null;
             try {
@@ -345,11 +311,9 @@
                 let videoId = null;
                 let isShorts = false;
 
-                // youtube.com, youtu.be, www.youtube.com 등 다양한 YouTube 도메인 포함
                 if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
                     if (hostname.includes('youtu.be')) {
                         videoId = pathname.substring(1).split(/[?#]/)[0];
-                        // youtu.be 링크는 shorts 여부를 URL만으로 판단하기 어려움, 추가 API 호출 필요할 수 있음
                     } else if (pathname === '/watch') {
                         videoId = urlObj.searchParams.get('v');
                     } else if (pathname.startsWith('/embed/')) {
@@ -359,7 +323,6 @@
                         isShorts = true;
                     }
                 }
-
 
                 if (videoId) {
                     return { videoId: videoId, isShorts: isShorts };
@@ -497,7 +460,6 @@
             document.body.classList.remove('modal-active');
         }
 
-        // openAddMusicModalButton 리스너는 이제 openAddMusicFab으로 대체됨
         closeAddMusicModalButton.addEventListener('click', closeModal);
         cancelAddMusicButton.addEventListener('click', closeModal);
         addMusicModal.addEventListener('click', (event) => {
