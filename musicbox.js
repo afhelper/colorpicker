@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
-import { getFirestore, collection, addDoc, query, orderBy, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, orderBy, getDocs, serverTimestamp, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
 console.log("Firebase 모듈 임포트 완료");
 
@@ -25,12 +25,28 @@ const loginButton = document.getElementById('loginButton');
 const messageDiv = document.getElementById('message');
 const dataSectionDiv = document.getElementById('dataSection');
 const musicListContainer = document.getElementById('musicListContainer');
+
+// Add Music Modal Elements
 const addMusicModal = document.getElementById('addMusicModal');
 const closeAddMusicModalButton = document.getElementById('closeAddMusicModalButton');
 const cancelAddMusicButton = document.getElementById('cancelAddMusicButton');
 const addMusicForm = document.getElementById('addMusicForm');
 const saveMusicButton = document.getElementById('saveMusicButton');
 const addMusicMessage = document.getElementById('addMusicMessage');
+
+// Edit Music Modal Elements
+const editMusicModal = document.getElementById('editMusicModal');
+const closeEditMusicModalButton = document.getElementById('closeEditMusicModalButton');
+const cancelEditMusicButton = document.getElementById('cancelEditMusicButton');
+const editMusicForm = document.getElementById('editMusicForm');
+const editMusicMessage = document.getElementById('editMusicMessage');
+const editMusicIdInput = document.getElementById('editMusicId');
+const editMusicTitleInput = document.getElementById('editMusicTitle');
+const editMusicUrlInput = document.getElementById('editMusicUrl');
+const editMusicDescriptionInput = document.getElementById('editMusicDescription');
+const editMusicLink1Input = document.getElementById('editMusicLink1');
+const editMusicLink2Input = document.getElementById('editMusicLink2');
+
 const FIXED_EMAIL = "admin@admin.com";
 
 const fabContainer = document.getElementById('fabContainer');
@@ -42,6 +58,9 @@ const openAddMusicFab = document.getElementById('openAddMusicFab');
 const logoutFab = document.getElementById('logoutFab');
 
 let fabOpen = false;
+let isAdminModeActive = false;
+let currentOpenDropdown = null;
+let currentEditingDocId = null;
 
 // --- Auth & UI Logic ---
 function updateUI(user) {
@@ -59,12 +78,13 @@ function updateUI(user) {
         if (typeof grecaptcha !== 'undefined') {
             grecaptcha.reset();
         }
-        if (fabOpen) { // 로그아웃 시 FAB 메뉴가 열려있으면 닫기
+        isAdminModeActive = false;
+        closeAnyOpenDropdown();
+        if (fabOpen) {
             fabActions.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
             fabActions.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
             fabIconPlus.classList.remove('hidden');
             fabIconClose.classList.add('hidden');
-            // fabButton.classList.remove('rotate-[360deg]'); // 회전 애니메이션은 아이콘 교체로 대체
             fabOpen = false;
         }
     }
@@ -76,7 +96,6 @@ onAuthStateChanged(auth, (user) => {
     else console.log("로그아웃 상태");
 });
 
-// FAB 버튼 클릭 이벤트
 fabButton.addEventListener('click', () => {
     fabOpen = !fabOpen;
     if (fabOpen) {
@@ -92,15 +111,13 @@ fabButton.addEventListener('click', () => {
     }
 });
 
-// 글쓰기 FAB 클릭 이벤트
 openAddMusicFab.addEventListener('click', () => {
-    openModal();
-    if (fabOpen) fabButton.click(); // FAB 메뉴 닫기
+    openAddModal();
+    if (fabOpen) fabButton.click();
 });
 
-// 로그아웃 FAB 클릭 이벤트
 logoutFab.addEventListener('click', async () => {
-    if (fabOpen) fabButton.click(); // FAB 메뉴 닫기
+    if (fabOpen) fabButton.click();
     try {
         await signOut(auth);
     } catch (error) {
@@ -110,6 +127,8 @@ logoutFab.addEventListener('click', async () => {
 });
 
 async function loadAndDisplayMusicData() {
+    if (!auth.currentUser) return;
+
     musicListContainer.innerHTML = '<p class="text-center text-gray-500">음악 목록을 불러오는 중...</p>';
     try {
         const musicCollection = collection(db, "musicbox");
@@ -121,9 +140,9 @@ async function loadAndDisplayMusicData() {
             return;
         }
         musicListContainer.innerHTML = '';
-        querySnapshot.forEach((doc) => {
-            const music = doc.data();
-            const musicElement = createMusicItemElement(doc.id, music);
+        querySnapshot.forEach((docSnapshot) => {
+            const music = docSnapshot.data();
+            const musicElement = createMusicItemElement(docSnapshot.id, music);
             musicListContainer.appendChild(musicElement);
         });
     } catch (error) {
@@ -165,7 +184,7 @@ function getYouTubeVideoInfo(url) {
 
 function createMusicItemElement(id, music) {
     const div = document.createElement('div');
-    div.className = "bg-gray-50 p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-200";
+    div.className = "music-item bg-gray-50 p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-200";
     div.dataset.id = id;
 
     let playerHtml = '';
@@ -195,10 +214,13 @@ function createMusicItemElement(id, music) {
                 <div class="${embedContainerClass} my-3 rounded overflow-hidden">
                     <iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                 </div>`;
-        } else {
+        } else { // URL이 있지만 YouTube나 오디오 파일이 아닌 경우
             playerHtml = `<div class="my-3"><a href="${musicUrl}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline break-all">콘텐츠 보기/듣기: ${musicUrl}</a></div>`;
         }
+    } else { // musicUrl이 비어있는 경우 (선택 사항이므로)
+        playerHtml = `<div class="my-3"><p class="text-sm text-gray-500">제공된 음악 URL이 없습니다.</p></div>`;
     }
+
 
     function createLinkHtml(linkUrl, linkNumber) {
         let html = '';
@@ -232,13 +254,17 @@ function createMusicItemElement(id, music) {
         ${link2Html}
         <p class="text-xs text-gray-400 mt-4 text-right">게시일: ${music.createdAt ? new Date(music.createdAt.seconds * 1000).toLocaleString() : '날짜 정보 없음'}</p>
     `;
+
+    if (isAdminModeActive) {
+        addAdminControls(div, id, music);
+    }
     return div;
 }
 
 async function handleLogin() {
-    const password = passwordInput.value;
+    const passwordVal = passwordInput.value; // 변수명 변경 (전역 password와 충돌 방지)
     const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode';
-    if (!password) {
+    if (!passwordVal) {
         messageDiv.textContent = "비밀번호를 입력해주세요.";
         messageDiv.className = "mt-4 text-sm text-center text-red-500";
         return;
@@ -254,7 +280,7 @@ async function handleLogin() {
     messageDiv.textContent = "로그인 시도 중...";
     messageDiv.className = "mt-4 text-sm text-center text-gray-500";
     try {
-        await signInWithEmailAndPassword(auth, FIXED_EMAIL, password);
+        await signInWithEmailAndPassword(auth, FIXED_EMAIL, passwordVal);
         passwordInput.value = "";
     } catch (error) {
         console.error("로그인 실패:", error.code, error.message);
@@ -276,13 +302,15 @@ passwordInput.addEventListener('keydown', (event) => {
     }
 });
 
-function openModal() {
+function openAddModal() {
+    addMusicForm.reset();
+    addMusicMessage.textContent = '';
     addMusicModal.classList.remove('hidden');
     addMusicModal.classList.add('modal-active');
     document.body.classList.add('modal-active');
 }
 
-function closeModal() {
+function closeAddModal() {
     addMusicForm.reset();
     addMusicMessage.textContent = '';
     addMusicModal.classList.add('hidden');
@@ -290,10 +318,10 @@ function closeModal() {
     document.body.classList.remove('modal-active');
 }
 
-closeAddMusicModalButton.addEventListener('click', closeModal);
-cancelAddMusicButton.addEventListener('click', closeModal);
+closeAddMusicModalButton.addEventListener('click', closeAddModal);
+cancelAddMusicButton.addEventListener('click', closeAddModal);
 addMusicModal.addEventListener('click', (event) => {
-    if (event.target === addMusicModal) closeModal();
+    if (event.target === addMusicModal) closeAddModal();
 });
 
 addMusicForm.addEventListener('submit', async (event) => {
@@ -303,13 +331,14 @@ addMusicForm.addEventListener('submit', async (event) => {
     addMusicMessage.textContent = "데이터를 저장하고 있습니다...";
     addMusicMessage.className = "mt-4 text-sm text-center text-gray-500";
     const title = addMusicForm.musicTitle.value.trim();
-    const url = addMusicForm.musicUrl.value.trim();
+    const url = addMusicForm.musicUrl.value.trim(); // URL은 이제 필수가 아님
     const description = addMusicForm.musicDescription.value.trim();
     const link1 = addMusicForm.musicLink1.value.trim();
     const link2 = addMusicForm.musicLink2.value.trim();
 
-    if (!title || !url) {
-        addMusicMessage.textContent = "곡 제목과 곡 URL은 필수입니다.";
+    // 곡 제목만 필수 항목으로 변경
+    if (!title) {
+        addMusicMessage.textContent = "곡 제목은 필수입니다.";
         addMusicMessage.className = "mt-4 text-sm text-center text-red-500";
         saveMusicButton.disabled = false;
         saveMusicButton.textContent = "저장";
@@ -318,7 +347,7 @@ addMusicForm.addEventListener('submit', async (event) => {
     try {
         await addDoc(collection(db, "musicbox"), {
             title: title,
-            url: url,
+            url: url, // 비어있을 수 있음
             description: description,
             link1: link1,
             link2: link2,
@@ -328,7 +357,7 @@ addMusicForm.addEventListener('submit', async (event) => {
         addMusicMessage.textContent = "음악이 성공적으로 추가되었습니다!";
         addMusicMessage.className = "mt-4 text-sm text-center text-green-500";
         setTimeout(() => {
-            closeModal();
+            closeAddModal();
             loadAndDisplayMusicData();
         }, 1500);
     } catch (error) {
@@ -338,6 +367,203 @@ addMusicForm.addEventListener('submit', async (event) => {
     } finally {
         saveMusicButton.disabled = false;
         saveMusicButton.textContent = "저장";
+    }
+});
+
+function toggleAdminMode() {
+    isAdminModeActive = !isAdminModeActive;
+    console.log("관리자 모드:", isAdminModeActive ? "활성화" : "비활성화");
+    loadAndDisplayMusicData();
+}
+
+function addAdminControls(itemElement, musicId, musicData) {
+    if (itemElement.querySelector('.admin-controls-container')) return;
+
+    const controlsContainer = document.createElement('div');
+    controlsContainer.className = 'admin-controls-container';
+
+    const moreButton = document.createElement('button');
+    moreButton.className = 'more-options-button';
+    moreButton.title = '더 보기';
+    moreButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+        </svg>
+    `;
+    moreButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        toggleDropdownMenu(event.currentTarget, musicId, musicData);
+    });
+
+    controlsContainer.appendChild(moreButton);
+    itemElement.appendChild(controlsContainer);
+}
+
+function toggleDropdownMenu(buttonElement, musicId, musicData) {
+    closeAnyOpenDropdown(buttonElement.nextSibling);
+
+    let dropdown = buttonElement.nextSibling;
+    if (dropdown && dropdown.classList.contains('dropdown-menu')) {
+        dropdown.remove();
+        currentOpenDropdown = null;
+    } else {
+        dropdown = createDropdownMenu(musicId, musicData);
+        buttonElement.parentNode.appendChild(dropdown);
+        currentOpenDropdown = dropdown;
+    }
+}
+
+function createDropdownMenu(musicId, musicData) {
+    const menu = document.createElement('div');
+    menu.className = 'dropdown-menu';
+
+    const editButton = document.createElement('button');
+    editButton.textContent = '수정';
+    editButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModal(musicId, musicData);
+        closeAnyOpenDropdown();
+    });
+
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = '삭제';
+    deleteButton.className = 'delete-option';
+    deleteButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        handleDeleteMusic(musicId, musicData.title);
+        closeAnyOpenDropdown();
+    });
+
+    menu.appendChild(editButton);
+    menu.appendChild(deleteButton);
+    return menu;
+}
+
+function closeAnyOpenDropdown(excludeMenu = null) {
+    if (currentOpenDropdown && currentOpenDropdown !== excludeMenu) {
+        currentOpenDropdown.remove();
+        currentOpenDropdown = null;
+    }
+}
+
+function openEditModal(docId, musicData) {
+    currentEditingDocId = docId;
+    editMusicIdInput.value = docId;
+    editMusicTitleInput.value = musicData.title || '';
+    editMusicUrlInput.value = musicData.url || ''; // URL은 필수가 아님
+    editMusicDescriptionInput.value = musicData.description || '';
+    editMusicLink1Input.value = musicData.link1 || '';
+    editMusicLink2Input.value = musicData.link2 || '';
+
+    editMusicMessage.textContent = '';
+    editMusicModal.classList.remove('hidden');
+    editMusicModal.classList.add('modal-active');
+    document.body.classList.add('modal-active');
+}
+
+function closeEditModal() {
+    editMusicForm.reset();
+    editMusicMessage.textContent = '';
+    editMusicModal.classList.add('hidden');
+    editMusicModal.classList.remove('modal-active');
+    document.body.classList.remove('modal-active');
+    currentEditingDocId = null;
+}
+
+closeEditMusicModalButton.addEventListener('click', closeEditModal);
+cancelEditMusicButton.addEventListener('click', closeEditModal);
+editMusicModal.addEventListener('click', (event) => {
+    if (event.target === editMusicModal) closeEditModal();
+});
+
+editMusicForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!currentEditingDocId) return;
+
+    const updateButton = document.getElementById('updateMusicButton');
+    updateButton.disabled = true;
+    updateButton.textContent = "업데이트 중...";
+    editMusicMessage.textContent = "데이터를 업데이트하고 있습니다...";
+    editMusicMessage.className = "mt-4 text-sm text-center text-gray-500";
+
+    const updatedMusic = {
+        title: editMusicTitleInput.value.trim(),
+        url: editMusicUrlInput.value.trim(), // URL은 필수가 아님
+        description: editMusicDescriptionInput.value.trim(),
+        link1: editMusicLink1Input.value.trim(),
+        link2: editMusicLink2Input.value.trim(),
+    };
+
+    // 곡 제목만 필수 항목으로 변경 (수정 시에도 동일)
+    if (!updatedMusic.title) {
+        editMusicMessage.textContent = "곡 제목은 필수입니다.";
+        editMusicMessage.className = "mt-4 text-sm text-center text-red-500";
+        updateButton.disabled = false;
+        updateButton.textContent = "업데이트";
+        return;
+    }
+
+    try {
+        const musicDocRef = doc(db, "musicbox", currentEditingDocId);
+        await updateDoc(musicDocRef, updatedMusic);
+
+        editMusicMessage.textContent = "음악 정보가 성공적으로 업데이트되었습니다!";
+        editMusicMessage.className = "mt-4 text-sm text-center text-green-500";
+        setTimeout(() => {
+            closeEditModal();
+            loadAndDisplayMusicData();
+        }, 1500);
+
+    } catch (error) {
+        console.error("데이터 업데이트 실패: ", error);
+        editMusicMessage.textContent = "데이터 업데이트에 실패했습니다: " + error.message;
+        editMusicMessage.className = "mt-4 text-sm text-center text-red-500";
+    } finally {
+        updateButton.disabled = false;
+        updateButton.textContent = "업데이트";
+    }
+});
+
+async function handleDeleteMusic(docId, musicTitle = "해당 곡") {
+    if (confirm(`"${musicTitle}" 음악을 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) {
+        try {
+            const musicDocRef = doc(db, "musicbox", docId);
+            await deleteDoc(musicDocRef);
+            console.log("문서 삭제 완료:", docId);
+            const itemToRemove = musicListContainer.querySelector(`.music-item[data-id="${docId}"]`);
+            if (itemToRemove) {
+                itemToRemove.remove();
+                if (musicListContainer.children.length === 0) {
+                    musicListContainer.innerHTML = '<p class="text-center text-gray-500">아직 등록된 음악이 없어요. 첫 곡을 추가해보세요!</p>';
+                }
+            } else {
+                loadAndDisplayMusicData();
+            }
+            alert(`"${musicTitle}"이(가) 삭제되었습니다.`);
+        } catch (error) {
+            console.error("문서 삭제 실패: ", error);
+            alert("삭제 중 오류가 발생했습니다: " + error.message);
+        }
+    }
+}
+
+document.addEventListener('keydown', function (event) {
+    const activeElement = document.activeElement;
+    const isInputFocused = activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.isContentEditable;
+
+    if (auth.currentUser && !isInputFocused) {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+            event.preventDefault();
+            toggleAdminMode();
+        }
+    }
+});
+
+document.addEventListener('click', (event) => {
+    if (currentOpenDropdown &&
+        !currentOpenDropdown.contains(event.target) &&
+        !event.target.closest('.more-options-button')) {
+        closeAnyOpenDropdown();
     }
 });
 
