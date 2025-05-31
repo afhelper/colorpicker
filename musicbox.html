@@ -52,50 +52,47 @@
             width: 100%;
             height: 100%;
         }
+
+        /* FAB 액션 버튼 트랜지션 및 초기 상태 */
+        #fabActions {
+            /* 기본적으로 위로 살짝 이동하면서 나타나도록 설정 */
+            /* transform: translateY(10px); */
+            /* 초기 위치 조정 (선택사항) */
+            /* 기본 상태는 아래로 내려가고 투명하게 */
+            transform: translateY(100%);
+            /* 시작 시 아래로 많이 내려가 있도록 */
+            margin-bottom: 0.5rem;
+            /* FAB 버튼과의 간격 */
+            right: 0.5rem;
+            /* FAB 버튼 기준으로 오른쪽 정렬 */
+        }
+
+        #fabActions.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(-100%) translateY(-0.5rem);
+            /* 위로 올라오면서 FAB 버튼 위에 위치 */
+        }
     </style>
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen py-6 sm:py-10 px-2 sm:px-4">
 
-    <div id="mainControls" class="w-full md:max-w-2xl mb-4 flex justify-end items-center space-x-2 hidden">
-        <button id="openAddMusicModalButton"
-            class="bg-green-500 hover:bg-green-600 text-white font-semibold py-1.5 px-3 text-sm rounded-md shadow-sm transition duration-150 ease-in-out flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                    d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-            </svg>
-            글쓰기
-        </button>
-        <button id="logoutButton"
-            class="bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1.5 px-3 text-sm rounded-md shadow-sm transition duration-150 ease-in-out flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
-                    clip-rule="evenodd" />
-            </svg>
-            로그아웃
-        </button>
-    </div>
-
     <div id="loginFormContainer" class="bg-white p-6 sm:p-8 rounded-lg shadow-md w-full sm:max-w-sm mb-8">
         <h2 class="text-2xl font-bold mb-6 text-center text-gray-700">로그인</h2>
-
         <div class="mb-4">
             <label for="password" class="block text-sm font-medium text-gray-600 mb-1">비밀번호</label>
             <input type="password" id="password" name="password"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 placeholder="비밀번호를 입력하세요">
         </div>
-
         <div class="mb-4 flex justify-center">
             <div class="g-recaptcha" data-sitekey="6Lc8aVErAAAAAMNjQG951806Wy0TY7zGB2rbDZig"></div>
         </div>
-
         <button id="loginButton"
             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm transition duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
             로그인
         </button>
-
         <div id="message" class="mt-4 text-sm text-center"></div>
     </div>
 
@@ -104,9 +101,45 @@
         </div>
     </div>
 
+    <div id="fabContainer" class="fixed bottom-6 right-6 z-40 hidden">
+        <div id="fabActions"
+            class="absolute bottom-full right-0 flex flex-col items-center space-y-2 mb-2 opacity-0 pointer-events-none transition-all duration-300 ease-out">
+            <button id="openAddMusicFab" title="글쓰기"
+                class="bg-green-500 hover:bg-green-600 text-white rounded-full shadow-md w-12 h-12 flex items-center justify-center transition-transform hover:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+            </button>
+            <button id="logoutFab" title="로그아웃"
+                class="bg-slate-500 hover:bg-slate-600 text-white rounded-full shadow-md w-12 h-12 flex items-center justify-center transition-transform hover:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </button>
+        </div>
+        <button id="fabButton"
+            class="bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-xl w-16 h-16 flex items-center justify-center transition-transform duration-300 ease-in-out z-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            <svg id="fabIconPlus" xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 transition-transform duration-300"
+                viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                    clip-rule="evenodd" />
+            </svg>
+            <svg id="fabIconClose" xmlns="http://www.w3.org/2000/svg"
+                class="h-8 w-8 transition-transform duration-300 hidden" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+
     <div id="addMusicModal" class="modal fixed w-full h-full top-0 left-0 flex items-center justify-center hidden z-50">
         <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
-
         <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
             <div class="py-4 text-left px-6">
                 <div class="flex justify-between items-center pb-3">
@@ -114,7 +147,6 @@
                     <button id="closeAddMusicModalButton"
                         class="modal-close cursor-pointer z-50 text-3xl text-gray-500 hover:text-gray-700">×</button>
                 </div>
-
                 <form id="addMusicForm">
                     <div class="mb-4">
                         <label for="musicTitle" class="block text-sm font-medium text-gray-600 mb-1">곡 제목</label>
@@ -147,9 +179,7 @@
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="https://...">
                     </div>
-
                     <div id="addMusicMessage" class="mt-4 text-sm text-center"></div>
-
                     <div class="flex justify-end pt-2 space-x-2">
                         <button type="button" id="cancelAddMusicButton"
                             class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-150 ease-in-out">취소</button>
@@ -160,7 +190,6 @@
             </div>
         </div>
     </div>
-
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -188,12 +217,9 @@
         const passwordInput = document.getElementById('password');
         const loginButton = document.getElementById('loginButton');
         const messageDiv = document.getElementById('message');
-        const mainControlsDiv = document.getElementById('mainControls');
-        const logoutButton = document.getElementById('logoutButton');
         const dataSectionDiv = document.getElementById('dataSection');
         const musicListContainer = document.getElementById('musicListContainer');
         const addMusicModal = document.getElementById('addMusicModal');
-        const openAddMusicModalButton = document.getElementById('openAddMusicModalButton');
         const closeAddMusicModalButton = document.getElementById('closeAddMusicModalButton');
         const cancelAddMusicButton = document.getElementById('cancelAddMusicButton');
         const addMusicForm = document.getElementById('addMusicForm');
@@ -201,21 +227,41 @@
         const addMusicMessage = document.getElementById('addMusicMessage');
         const FIXED_EMAIL = "admin@admin.com";
 
+        // New FAB Elements
+        const fabContainer = document.getElementById('fabContainer');
+        const fabButton = document.getElementById('fabButton');
+        const fabIconPlus = document.getElementById('fabIconPlus');
+        const fabIconClose = document.getElementById('fabIconClose');
+        const fabActions = document.getElementById('fabActions');
+        const openAddMusicFab = document.getElementById('openAddMusicFab');
+        const logoutFab = document.getElementById('logoutFab');
+
+        let fabOpen = false;
+
         // --- Auth & UI Logic ---
         function updateUI(user) {
             if (user) {
                 loginFormContainer.classList.add('hidden');
-                mainControlsDiv.classList.remove('hidden');
+                fabContainer.classList.remove('hidden'); // FAB 컨테이너 보이기
                 dataSectionDiv.classList.remove('hidden');
                 loadAndDisplayMusicData();
             } else {
                 loginFormContainer.classList.remove('hidden');
-                mainControlsDiv.classList.add('hidden');
+                fabContainer.classList.add('hidden'); // FAB 컨테이너 숨기기
                 dataSectionDiv.classList.add('hidden');
                 musicListContainer.innerHTML = '';
                 messageDiv.textContent = '';
                 if (typeof grecaptcha !== 'undefined') {
                     grecaptcha.reset();
+                }
+                // FAB 액션 닫기 (로그아웃 시)
+                if (fabOpen) {
+                    fabActions.classList.remove('opacity-100', 'pointer-events-auto');
+                    fabActions.classList.add('opacity-0', 'pointer-events-none');
+                    fabIconPlus.classList.remove('hidden');
+                    fabIconClose.classList.add('hidden');
+                    fabButton.classList.remove('rotate-180'); // 원래대로
+                    fabOpen = false;
                 }
             }
         }
@@ -225,6 +271,46 @@
             if (user) console.log("로그인 상태:", user.email);
             else console.log("로그아웃 상태");
         });
+
+        // FAB 버튼 클릭 이벤트
+        fabButton.addEventListener('click', () => {
+            fabOpen = !fabOpen;
+            if (fabOpen) {
+                fabActions.classList.remove('opacity-0', 'pointer-events-none');
+                fabActions.classList.add('opacity-100', 'pointer-events-auto');
+                // FAB 버튼 아이콘 변경 (+) -> (X)
+                fabIconPlus.classList.add('hidden');
+                fabIconClose.classList.remove('hidden');
+                fabButton.classList.add('rotate-180'); // 애니메이션 효과
+            } else {
+                fabActions.classList.add('opacity-0', 'pointer-events-none');
+                fabActions.classList.remove('opacity-100', 'pointer-events-auto');
+                // FAB 버튼 아이콘 변경 (X) -> (+)
+                fabIconPlus.classList.remove('hidden');
+                fabIconClose.classList.add('hidden');
+                fabButton.classList.remove('rotate-180');
+            }
+        });
+
+        // 글쓰기 FAB 클릭 이벤트
+        openAddMusicFab.addEventListener('click', () => {
+            openModal();
+            // 액션 버튼 클릭 후 FAB 메뉴 닫기
+            if (fabOpen) fabButton.click();
+        });
+
+        // 로그아웃 FAB 클릭 이벤트
+        logoutFab.addEventListener('click', async () => {
+            // 액션 버튼 클릭 후 FAB 메뉴 닫기 (로그아웃 전에)
+            if (fabOpen) fabButton.click();
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("로그아웃 실패:", error);
+                alert("로그아웃 중 오류가 발생했습니다.");
+            }
+        });
+
 
         async function loadAndDisplayMusicData() {
             musicListContainer.innerHTML = '<p class="text-center text-gray-500">음악 목록을 불러오는 중...</p>';
@@ -260,30 +346,26 @@
                 let isShorts = false;
 
                 // youtube.com, youtu.be, www.youtube.com 등 다양한 YouTube 도메인 포함
-                if (hostname.includes('youtube.com') || hostname.includes('youtu.be') || hostname.includes('www.youtube.com')) {
-                    if (pathname === '/watch') { // 예: /watch?v=VIDEO_ID
-                        videoId = urlObj.searchParams.get('v');
-                    } else if (pathname.startsWith('/embed/')) { // 예: /embed/VIDEO_ID
-                        videoId = pathname.substring('/embed/'.length).split(/[?#]/)[0];
-                    } else if (pathname.startsWith('/shorts/')) { // 예: /shorts/VIDEO_ID
-                        videoId = pathname.substring('/shorts/'.length).split(/[?#]/)[0];
-                        isShorts = true; // Shorts 경로로 명확히 확인
-                    } else if (hostname.includes('youtu.be')) { // 예: youtu.be (VIDEO_ID가 경로에 바로 오는 경우)
+                if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+                    if (hostname.includes('youtu.be')) {
                         videoId = pathname.substring(1).split(/[?#]/)[0];
-                        // 이 경우 isShorts 여부는 URL만으로 100% 확신하기 어려우나, Shorts일 가능성이 있음
-                        // 필요하다면 videoId의 유효성(길이 등)을 추가로 검사할 수 있음
-                    } else if (hostname === 'www.youtube.com' || hostname === 'youtube.com') { // googleusercontent 프록시 패턴
+                        // youtu.be 링크는 shorts 여부를 URL만으로 판단하기 어려움, 추가 API 호출 필요할 수 있음
+                    } else if (pathname === '/watch') {
                         videoId = urlObj.searchParams.get('v');
+                    } else if (pathname.startsWith('/embed/')) {
+                        videoId = pathname.substring('/embed/'.length).split(/[?#]/)[0];
+                    } else if (pathname.startsWith('/shorts/')) {
+                        videoId = pathname.substring('/shorts/'.length).split(/[?#]/)[0];
+                        isShorts = true;
                     }
                 }
 
+
                 if (videoId) {
-                    // Shorts가 아닌 일반 영상인데 짧은 주소(youtu.be)를 통해 ID가 추출된 경우, isShorts는 false로 유지
-                    // /shorts/ 경로를 통해서만 isShorts를 true로 설정
-                    return { videoId: videoId, isShorts: pathname.startsWith('/shorts/') };
+                    return { videoId: videoId, isShorts: isShorts };
                 }
             } catch (e) {
-                // console.warn("URL에서 YouTube 정보 추출 중 오류:", url, e); // 개발 중 확인용
+                console.warn("URL에서 YouTube 정보 추출 중 오류:", url, e);
             }
             return null;
         }
@@ -314,28 +396,29 @@
                             </audio>
                         </div>`;
                 } else if (mainVideoInfo) {
+                    const embedUrl = `https://www.youtube.com/embed/${mainVideoInfo.videoId}`;
                     const embedContainerClass = mainVideoInfo.isShorts ? 'youtube-shorts-container' : 'aspect-w-16 aspect-h-9';
                     playerHtml = `
-                        <div class="${embedContainerClass} my-3 rounded">
-                            <iframe src="https://www.youtube.com/embed/${mainVideoInfo.videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                        <div class="${embedContainerClass} my-3 rounded overflow-hidden">
+                            <iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                         </div>`;
                 } else {
                     playerHtml = `<div class="my-3"><a href="${musicUrl}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline break-all">콘텐츠 보기/듣기: ${musicUrl}</a></div>`;
                 }
             }
 
-            // 링크1, 링크2 처리 함수화 (Shorts 비율 적용)
             function createLinkHtml(linkUrl, linkNumber) {
                 let html = '';
                 if (linkUrl) {
                     const videoInfo = getYouTubeVideoInfo(linkUrl);
                     if (videoInfo) {
+                        const embedUrl = `https://www.youtube.com/embed/${videoInfo.videoId}`;
                         const embedContainerClass = videoInfo.isShorts ? 'youtube-shorts-container' : 'aspect-w-16 aspect-h-9';
                         html = `
                             <div class="mt-3">
                                 <p class="text-sm font-medium text-gray-700 mb-1">관련 링크 ${linkNumber} (YouTube${videoInfo.isShorts ? ' Shorts' : ''}):</p>
-                                <div class="${embedContainerClass} rounded">
-                                    <iframe src="https://www.youtube.com/embed/${videoInfo.videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                                <div class="${embedContainerClass} rounded overflow-hidden">
+                                    <iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
                                 </div>
                             </div>`;
                     } else {
@@ -359,7 +442,6 @@
             return div;
         }
 
-        // --- Event Listeners & Form Handling ---
         async function handleLogin() {
             const password = passwordInput.value;
             const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode';
@@ -401,15 +483,6 @@
             }
         });
 
-        logoutButton.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error("로그아웃 실패:", error);
-                alert("로그아웃 중 오류가 발생했습니다.");
-            }
-        });
-
         function openModal() {
             addMusicModal.classList.remove('hidden');
             addMusicModal.classList.add('modal-active');
@@ -424,7 +497,7 @@
             document.body.classList.remove('modal-active');
         }
 
-        openAddMusicModalButton.addEventListener('click', openModal);
+        // openAddMusicModalButton 리스너는 이제 openAddMusicFab으로 대체됨
         closeAddMusicModalButton.addEventListener('click', closeModal);
         cancelAddMusicButton.addEventListener('click', closeModal);
         addMusicModal.addEventListener('click', (event) => {
