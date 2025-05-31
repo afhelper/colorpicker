@@ -21,6 +21,21 @@
         .modal-content {
             transition: transform 0.25s ease;
         }
+
+        /* Tailwind CSS aspect-ratio 플러그인이 로드되지 않았을 경우를 위한 간단한 폴백 */
+        .aspect-w-16 {
+            position: relative;
+            padding-bottom: 56.25%;
+            /* 16:9 ratio */
+        }
+
+        .aspect-h-9>iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 
@@ -73,7 +88,7 @@
                 <div class="flex justify-between items-center pb-3">
                     <p class="text-2xl font-bold text-gray-700">새로운 곡 추가</p>
                     <button id="closeAddMusicModalButton"
-                        class="modal-close cursor-pointer z-50 text-3xl text-gray-500 hover:text-gray-700">&times;</button>
+                        class="modal-close cursor-pointer z-50 text-3xl text-gray-500 hover:text-gray-700">×</button>
                 </div>
 
                 <form id="addMusicForm">
@@ -84,7 +99,7 @@
                     </div>
                     <div class="mb-4">
                         <label for="musicUrl" class="block text-sm font-medium text-gray-600 mb-1">곡 URL (예: YouTube,
-                            SoundCloud 링크)</label>
+                            오디오 파일 링크)</label>
                         <input type="url" id="musicUrl" name="musicUrl" required
                             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             placeholder="https://...">
@@ -131,7 +146,7 @@
         console.log("Firebase 모듈 임포트 완료");
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U", // 실제 배포 시에는 환경 변수 등으로 관리하는 것이 안전합니다.
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
             authDomain: "submit-33eb1.firebaseapp.com",
             projectId: "submit-33eb1",
             storageBucket: "submit-33eb1.appspot.com",
@@ -141,7 +156,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app); // Firestore 인스턴스 가져오기
+        const db = getFirestore(app);
         console.log("Firebase 초기화 완료");
 
         // 로그인 UI 요소
@@ -167,18 +182,17 @@
 
         const FIXED_EMAIL = "admin@admin.com";
 
-        // UI 업데이트 함수
         function updateUI(user) {
-            if (user) { // 로그인 상태
+            if (user) {
                 loginFormContainer.classList.add('hidden');
                 mainControlsDiv.classList.remove('hidden');
                 dataSectionDiv.classList.remove('hidden');
-                loadAndDisplayMusicData(); // 데이터 로드 및 표시
-            } else { // 로그아웃 상태
+                loadAndDisplayMusicData();
+            } else {
                 loginFormContainer.classList.remove('hidden');
                 mainControlsDiv.classList.add('hidden');
                 dataSectionDiv.classList.add('hidden');
-                musicListContainer.innerHTML = ''; // 기존 음악 목록 지우기
+                musicListContainer.innerHTML = '';
                 messageDiv.textContent = '';
                 if (typeof grecaptcha !== 'undefined') {
                     grecaptcha.reset();
@@ -186,7 +200,6 @@
             }
         }
 
-        // 인증 상태 변경 감지
         onAuthStateChanged(auth, (user) => {
             updateUI(user);
             if (user) {
@@ -196,12 +209,11 @@
             }
         });
 
-        // Firestore에서 음악 데이터 로드 및 표시 함수
         async function loadAndDisplayMusicData() {
             musicListContainer.innerHTML = '<p class="text-center text-gray-500">음악 목록을 불러오는 중...</p>';
             try {
                 const musicCollection = collection(db, "musicbox");
-                const q = query(musicCollection, orderBy("createdAt", "desc")); // 최신순으로 정렬
+                const q = query(musicCollection, orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
                 if (querySnapshot.empty) {
@@ -209,7 +221,7 @@
                     return;
                 }
 
-                musicListContainer.innerHTML = ''; // 기존 내용 지우기
+                musicListContainer.innerHTML = '';
                 querySnapshot.forEach((doc) => {
                     const music = doc.data();
                     const musicElement = createMusicItemElement(doc.id, music);
@@ -221,40 +233,60 @@
             }
         }
 
-        // 음악 아이템 HTML 요소 생성 함수
+        // 음악 아이템 HTML 요소 생성 함수 (오디오 플레이어 기능 추가)
         function createMusicItemElement(id, music) {
             const div = document.createElement('div');
             div.className = "bg-gray-50 p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-200";
             div.dataset.id = id;
 
-            let embedPlayer = '';
-            if (music.url) {
-                // YouTube URL에서 비디오 ID 추출 (간단한 버전)
-                let videoId = null;
-                try {
-                    const urlObj = new URL(music.url);
-                    if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
-                        videoId = urlObj.searchParams.get('v');
-                    } else if (urlObj.hostname === 'youtu.be') {
-                        videoId = urlObj.pathname.substring(1);
-                    }
-                } catch (e) { /* 잘못된 URL 형식일 수 있음 */ }
+            let playerHtml = '';
+            const musicUrl = music.url;
 
+            if (musicUrl) {
+                const isAudioFile = /\.(mp3|m4a|ogg|wav|aac)$/i.test(musicUrl); // 오디오 확장자 (.aac 추가)
 
-                if (videoId) {
-                    embedPlayer = `
-                        <div class="aspect-w-16 aspect-h-9 mb-3">
-                            <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
+                if (isAudioFile) {
+                    let audioType = '';
+                    if (/\.mp3$/i.test(musicUrl)) audioType = 'audio/mpeg';
+                    else if (/\.(m4a|aac)$/i.test(musicUrl)) audioType = 'audio/mp4'; // .aac도 audio/mp4로 처리 가능성 높음
+                    else if (/\.ogg$/i.test(musicUrl)) audioType = 'audio/ogg';
+                    else if (/\.wav$/i.test(musicUrl)) audioType = 'audio/wav';
+
+                    playerHtml = `
+                        <div class="my-3">
+                            <audio controls preload="none" class="w-full rounded">
+                                <source src="${musicUrl}" ${audioType ? `type="${audioType}"` : ''}>
+                                브라우저가 오디오 재생을 지원하지 않습니다. <a href="${musicUrl}" target="_blank" class="text-indigo-500 hover:underline">직접 듣기</a>
+                            </audio>
                         </div>`;
                 } else {
-                    embedPlayer = `<div class="mb-2"><a href="${music.url}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline break-all">음악 듣기/보기: ${music.url}</a></div>`;
+                    let videoId = null;
+                    try {
+                        const urlObj = new URL(musicUrl);
+                        if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+                            videoId = urlObj.searchParams.get('v');
+                        } else if (urlObj.hostname === 'youtu.be') {
+                            videoId = urlObj.pathname.substring(1);
+                        }
+                        // 추가적으로 SoundCloud 등 다른 비디오/오디오 플랫폼 처리 로직도 여기에 넣을 수 있음
+                    } catch (e) {
+                        console.warn("URL 파싱 중 오류:", e);
+                    }
+
+                    if (videoId) {
+                        playerHtml = `
+                            <div class="aspect-w-16 aspect-h-9 my-3 rounded overflow-hidden">
+                                <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                            </div>`;
+                    } else {
+                        playerHtml = `<div class="my-3"><a href="${musicUrl}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline break-all">콘텐츠 보기/듣기: ${musicUrl}</a></div>`;
+                    }
                 }
             }
 
-
             div.innerHTML = `
-                <h4 class="text-xl font-semibold text-indigo-700 mb-1">${music.title}</h4>
-                ${embedPlayer}
+                <h4 class="text-xl font-semibold text-indigo-700 mb-1">${music.title || '제목 없음'}</h4>
+                ${playerHtml}
                 ${music.description ? `<p class="text-sm text-gray-600 mb-3 whitespace-pre-wrap">${music.description}</p>` : ''}
                 <div class="mt-2 space-y-1">
                     ${music.link1 ? `<div><a href="${music.link1}" target="_blank" class="text-sm text-blue-500 hover:underline break-all">관련 링크 1: ${music.link1}</a></div>` : ''}
@@ -266,7 +298,6 @@
         }
 
 
-        // 로그인 처리 함수
         async function handleLogin() {
             const password = passwordInput.value;
             const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode';
@@ -322,16 +353,15 @@
             }
         });
 
-        // 모달 관련 함수
         function openModal() {
             addMusicModal.classList.remove('hidden');
             addMusicModal.classList.add('modal-active');
-            document.body.classList.add('modal-active'); // 스크롤 방지
+            document.body.classList.add('modal-active');
         }
 
         function closeModal() {
-            addMusicForm.reset(); // 폼 초기화
-            addMusicMessage.textContent = ''; // 메시지 초기화
+            addMusicForm.reset();
+            addMusicMessage.textContent = '';
             addMusicModal.classList.add('hidden');
             addMusicModal.classList.remove('modal-active');
             document.body.classList.remove('modal-active');
@@ -340,15 +370,12 @@
         openAddMusicModalButton.addEventListener('click', openModal);
         closeAddMusicModalButton.addEventListener('click', closeModal);
         cancelAddMusicButton.addEventListener('click', closeModal);
-        // 모달 외부 클릭 시 닫기 (선택 사항)
         addMusicModal.addEventListener('click', (event) => {
-            if (event.target === addMusicModal) { // modal-overlay 클릭 시
+            if (event.target === addMusicModal) {
                 closeModal();
             }
         });
 
-
-        // 음악 추가 폼 제출 처리
         addMusicForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             saveMusicButton.disabled = true;
@@ -377,15 +404,15 @@
                     description: description,
                     link1: link1,
                     link2: link2,
-                    createdAt: serverTimestamp(), // 서버 시간 기준으로 저장
-                    userId: auth.currentUser ? auth.currentUser.uid : null // 사용자 ID (선택적)
+                    createdAt: serverTimestamp(),
+                    userId: auth.currentUser ? auth.currentUser.uid : null
                 });
                 console.log("문서 ID: ", docRef.id, " 로 저장됨");
                 addMusicMessage.textContent = "음악이 성공적으로 추가되었습니다!";
                 addMusicMessage.className = "mt-4 text-sm text-center text-green-500";
-                setTimeout(() => { // 잠시 후 모달 닫고 목록 새로고침
+                setTimeout(() => {
                     closeModal();
-                    loadAndDisplayMusicData(); // 목록 즉시 갱신
+                    loadAndDisplayMusicData();
                 }, 1500);
             } catch (error) {
                 console.error("데이터 저장 실패: ", error);
@@ -396,7 +423,6 @@
                 saveMusicButton.textContent = "저장";
             }
         });
-
 
         function mapAuthError(errorCode) {
             switch (errorCode) {
