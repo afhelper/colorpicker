@@ -222,26 +222,94 @@ function createMusicItemElement(id, music) {
     }
 
 
+
+
+
     function createLinkHtml(linkUrl, linkNumber) {
         let html = '';
         if (linkUrl) {
             const videoInfo = getYouTubeVideoInfo(linkUrl);
+
+            const chainIconSvg = `
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-gray-500">
+      <path stroke-linecap="round" stroke-linejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
+    </svg>`;
+
+
+            const firstLineHtml = `
+            <div class="flex items-center space-x-1">
+                ${chainIconSvg}
+                <span class="text-sm font-medium text-gray-700">#${linkNumber}</span>
+            </div>`;
+
             if (videoInfo) {
                 const embedUrl = `https://www.youtube.com/embed/${videoInfo.videoId}`;
                 const embedContainerClass = videoInfo.isShorts ? 'youtube-shorts-container' : 'aspect-w-16 aspect-h-9';
-                html = `
-                    <div class="mt-3">
-                        <p class="text-sm font-medium text-gray-700 mb-1">관련 링크 ${linkNumber} (YouTube${videoInfo.isShorts ? ' Shorts' : ''}):</p>
-                        <div class="${embedContainerClass} rounded overflow-hidden">
-                            <iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-                        </div>
+
+                const youtubeIconSvg = `
+                <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current text-red-600 transition-colors">
+                    <title>YouTube</title>
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>`;
+
+                const shortsBadge = videoInfo.isShorts ? '<span class="text-xs bg-gray-200 text-black-700 px-1.5 py-0.5 rounded-full font-semibold">Shorts</span>' : '';
+
+                let secondLineIconsHtml = '';
+                if (shortsBadge) {
+                    secondLineIconsHtml = `
+                    <div class="flex items-center space-x-1.5 mt-1">
+                        ${youtubeIconSvg}
+                        ${shortsBadge}
                     </div>`;
+                } else {
+                    secondLineIconsHtml = `
+                    <div class="flex items-center mt-1">
+                        ${youtubeIconSvg}
+                    </div>`;
+                }
+
+                html = `
+                <div class="mt-3">
+                    <div class="mb-2"> 
+                        ${firstLineHtml}
+                        ${secondLineIconsHtml}
+                    </div>
+                    <div class="${embedContainerClass} rounded overflow-hidden shadow-sm">
+                        <iframe src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+                    </div>
+                </div>`;
             } else {
-                html = `<div class="mt-3"><p class="text-sm font-medium text-gray-700 mb-1">관련 링크 ${linkNumber}:</p><a href="${linkUrl}" target="_blank" class="text-sm text-blue-500 hover:underline break-all">${linkUrl}</a></div>`;
+                const linkIdentifierWithColonHtml = `
+                <div class="flex items-center space-x-1">
+                    ${chainIconSvg}
+                    <span class="text-sm font-medium text-gray-700">#${linkNumber}:</span>
+                </div>`;
+
+                html = `
+                <div class="mt-3">
+                    <div class="mb-2">
+                        ${linkIdentifierWithColonHtml} 
+                    </div>
+                    <a href="${linkUrl}" target="_blank" class="text-sm text-blue-500 hover:underline break-all block pl-5">
+                        ${linkUrl}
+                    </a>
+                </div>`;
             }
         }
         return html;
     }
+
+
+
+
+
+
+
+
+
+
+
+
 
     const link1Html = createLinkHtml(music.link1, 1);
     const link2Html = createLinkHtml(music.link2, 2);
@@ -386,9 +454,11 @@ function addAdminControls(itemElement, musicId, musicData) {
     moreButton.className = 'more-options-button';
     moreButton.title = '더 보기';
     moreButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
-            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-        </svg>
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+</svg>
+
     `;
     moreButton.addEventListener('click', (event) => {
         event.stopPropagation();
