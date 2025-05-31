@@ -4,14 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>보안 로그인</title>
+    <title>뮤직박스 로그인</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        /* 모달 기본 스타일 */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-active {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            transition: transform 0.25s ease;
+        }
+    </style>
 </head>
 
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen py-10">
 
-    <div id="logoutSection" class="w-full max-w-md mb-4 text-right hidden">
+    <div id="mainControls" class="w-full max-w-md mb-4 flex justify-end items-center space-x-2 hidden">
+        <button id="openAddMusicModalButton"
+            class="bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-3 text-sm rounded-md shadow-sm transition duration-150 ease-in-out">
+            글쓰기
+        </button>
         <button id="logoutButton"
             class="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 text-sm rounded-md shadow-sm transition duration-150 ease-in-out">
             로그아웃
@@ -40,19 +59,79 @@
         <div id="message" class="mt-4 text-sm text-center"></div>
     </div>
 
-    <div id="dataSection" class="bg-white p-6 rounded-lg shadow-md w-full max-w-md hidden">
-        <h3 class="text-xl font-semibold mb-3 text-gray-700">인증된 사용자를 위한 데이터</h3>
-        <pre id="jsonDataContainer" class="bg-gray-50 p-3 rounded text-sm overflow-x-auto"></pre>
+    <div id="dataSection" class="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl hidden">
+        <h3 class="text-xl font-semibold mb-4 text-gray-700 text-center">내 뮤직박스</h3>
+        <div id="musicListContainer" class="space-y-4">
+        </div>
     </div>
+
+    <div id="addMusicModal" class="modal fixed w-full h-full top-0 left-0 flex items-center justify-center hidden z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+
+        <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+            <div class="py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3">
+                    <p class="text-2xl font-bold text-gray-700">새로운 곡 추가</p>
+                    <button id="closeAddMusicModalButton"
+                        class="modal-close cursor-pointer z-50 text-3xl text-gray-500 hover:text-gray-700">&times;</button>
+                </div>
+
+                <form id="addMusicForm">
+                    <div class="mb-4">
+                        <label for="musicTitle" class="block text-sm font-medium text-gray-600 mb-1">곡 제목</label>
+                        <input type="text" id="musicTitle" name="musicTitle" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="musicUrl" class="block text-sm font-medium text-gray-600 mb-1">곡 URL (예: YouTube,
+                            SoundCloud 링크)</label>
+                        <input type="url" id="musicUrl" name="musicUrl" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="https://...">
+                    </div>
+                    <div class="mb-4">
+                        <label for="musicDescription" class="block text-sm font-medium text-gray-600 mb-1">설명</label>
+                        <textarea id="musicDescription" name="musicDescription" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label for="musicLink1" class="block text-sm font-medium text-gray-600 mb-1">관련 링크 1
+                            (선택)</label>
+                        <input type="url" id="musicLink1" name="musicLink1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="https://...">
+                    </div>
+                    <div class="mb-4">
+                        <label for="musicLink2" class="block text-sm font-medium text-gray-600 mb-1">관련 링크 2
+                            (선택)</label>
+                        <input type="url" id="musicLink2" name="musicLink2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            placeholder="https://...">
+                    </div>
+
+                    <div id="addMusicMessage" class="mt-4 text-sm text-center"></div>
+
+                    <div class="flex justify-end pt-2 space-x-2">
+                        <button type="button" id="cancelAddMusicButton"
+                            class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition duration-150 ease-in-out">취소</button>
+                        <button type="submit" id="saveMusicButton"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-150 ease-in-out">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
         console.log("Firebase 모듈 임포트 완료");
 
         const firebaseConfig = {
-            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U",
+            apiKey: "AIzaSyBeIPr1H_de7eIZUagNAUvPbw-rYRteP9U", // 실제 배포 시에는 환경 변수 등으로 관리하는 것이 안전합니다.
             authDomain: "submit-33eb1.firebaseapp.com",
             projectId: "submit-33eb1",
             storageBucket: "submit-33eb1.appspot.com",
@@ -62,17 +141,29 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app); // Firestore 인스턴스 가져오기
         console.log("Firebase 초기화 완료");
 
+        // 로그인 UI 요소
         const loginFormContainer = document.getElementById('loginFormContainer');
         const passwordInput = document.getElementById('password');
         const loginButton = document.getElementById('loginButton');
         const messageDiv = document.getElementById('message');
 
-        const dataSectionDiv = document.getElementById('dataSection');
-        const jsonDataContainer = document.getElementById('jsonDataContainer');
-        const logoutSectionDiv = document.getElementById('logoutSection');
+        // 데이터 표시 및 로그아웃 UI 요소
+        const mainControlsDiv = document.getElementById('mainControls');
         const logoutButton = document.getElementById('logoutButton');
+        const dataSectionDiv = document.getElementById('dataSection');
+        const musicListContainer = document.getElementById('musicListContainer');
+
+        // 음악 추가 모달 UI 요소
+        const addMusicModal = document.getElementById('addMusicModal');
+        const openAddMusicModalButton = document.getElementById('openAddMusicModalButton');
+        const closeAddMusicModalButton = document.getElementById('closeAddMusicModalButton');
+        const cancelAddMusicButton = document.getElementById('cancelAddMusicButton');
+        const addMusicForm = document.getElementById('addMusicForm');
+        const saveMusicButton = document.getElementById('saveMusicButton');
+        const addMusicMessage = document.getElementById('addMusicMessage');
 
         const FIXED_EMAIL = "admin@admin.com";
 
@@ -80,16 +171,16 @@
         function updateUI(user) {
             if (user) { // 로그인 상태
                 loginFormContainer.classList.add('hidden');
-                logoutSectionDiv.classList.remove('hidden');
+                mainControlsDiv.classList.remove('hidden');
                 dataSectionDiv.classList.remove('hidden');
-                loadAndDisplayDummyData(); // 데이터 로드 및 표시
+                loadAndDisplayMusicData(); // 데이터 로드 및 표시
             } else { // 로그아웃 상태
                 loginFormContainer.classList.remove('hidden');
-                logoutSectionDiv.classList.add('hidden');
+                mainControlsDiv.classList.add('hidden');
                 dataSectionDiv.classList.add('hidden');
-                jsonDataContainer.textContent = ''; // 기존 데이터 지우기
-                messageDiv.textContent = ''; // 메시지 지우기
-                if (typeof grecaptcha !== 'undefined') { // reCAPTCHA 리셋
+                musicListContainer.innerHTML = ''; // 기존 음악 목록 지우기
+                messageDiv.textContent = '';
+                if (typeof grecaptcha !== 'undefined') {
                     grecaptcha.reset();
                 }
             }
@@ -105,52 +196,87 @@
             }
         });
 
-        async function fetchDummyData() {
-            // ... (이전과 동일한 fetchDummyData 함수)
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    const dummyData = {
-                        userProfile: {
-                            username: "admin_user",
-                            email: FIXED_EMAIL,
-                            preferences: { theme: "dark", notifications: true },
-                            lastLogin: new Date().toISOString()
-                        },
-                        musicList: [
-                            { "id": "song001", "title": "별빛 교향곡", "artist": "우주먼지" },
-                            { "id": "song002", "title": "코딩하는 밤", "artist": "카페인" },
-                            { "id": "song003", "title": "새벽의 알고리즘", "artist": "AI सिंगर" }
-                        ],
-                        message: "데이터 로드 성공!"
-                    };
-                    resolve(dummyData);
-                }, 300);
-            });
-        }
-
-        async function loadAndDisplayDummyData() {
+        // Firestore에서 음악 데이터 로드 및 표시 함수
+        async function loadAndDisplayMusicData() {
+            musicListContainer.innerHTML = '<p class="text-center text-gray-500">음악 목록을 불러오는 중...</p>';
             try {
-                const jsonData = await fetchDummyData();
-                console.log("가져온 JSON 데이터:", jsonData);
-                jsonDataContainer.textContent = JSON.stringify(jsonData, null, 2);
+                const musicCollection = collection(db, "musicbox");
+                const q = query(musicCollection, orderBy("createdAt", "desc")); // 최신순으로 정렬
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    musicListContainer.innerHTML = '<p class="text-center text-gray-500">아직 등록된 음악이 없어요. 첫 곡을 추가해보세요!</p>';
+                    return;
+                }
+
+                musicListContainer.innerHTML = ''; // 기존 내용 지우기
+                querySnapshot.forEach((doc) => {
+                    const music = doc.data();
+                    const musicElement = createMusicItemElement(doc.id, music);
+                    musicListContainer.appendChild(musicElement);
+                });
             } catch (error) {
-                console.error("더미 데이터 로드 실패:", error);
-                jsonDataContainer.textContent = "데이터를 불러오는 데 실패했습니다.";
+                console.error("음악 데이터 로드 실패:", error);
+                musicListContainer.innerHTML = '<p class="text-center text-red-500">음악 목록을 불러오는 데 실패했습니다.</p>';
             }
         }
+
+        // 음악 아이템 HTML 요소 생성 함수
+        function createMusicItemElement(id, music) {
+            const div = document.createElement('div');
+            div.className = "bg-gray-50 p-4 rounded-lg shadow hover:shadow-md transition-shadow duration-200";
+            div.dataset.id = id;
+
+            let embedPlayer = '';
+            if (music.url) {
+                // YouTube URL에서 비디오 ID 추출 (간단한 버전)
+                let videoId = null;
+                try {
+                    const urlObj = new URL(music.url);
+                    if (urlObj.hostname === 'www.youtube.com' || urlObj.hostname === 'youtube.com') {
+                        videoId = urlObj.searchParams.get('v');
+                    } else if (urlObj.hostname === 'youtu.be') {
+                        videoId = urlObj.pathname.substring(1);
+                    }
+                } catch (e) { /* 잘못된 URL 형식일 수 있음 */ }
+
+
+                if (videoId) {
+                    embedPlayer = `
+                        <div class="aspect-w-16 aspect-h-9 mb-3">
+                            <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="rounded"></iframe>
+                        </div>`;
+                } else {
+                    embedPlayer = `<div class="mb-2"><a href="${music.url}" target="_blank" class="text-indigo-600 hover:text-indigo-800 hover:underline break-all">음악 듣기/보기: ${music.url}</a></div>`;
+                }
+            }
+
+
+            div.innerHTML = `
+                <h4 class="text-xl font-semibold text-indigo-700 mb-1">${music.title}</h4>
+                ${embedPlayer}
+                ${music.description ? `<p class="text-sm text-gray-600 mb-3 whitespace-pre-wrap">${music.description}</p>` : ''}
+                <div class="mt-2 space-y-1">
+                    ${music.link1 ? `<div><a href="${music.link1}" target="_blank" class="text-sm text-blue-500 hover:underline break-all">관련 링크 1: ${music.link1}</a></div>` : ''}
+                    ${music.link2 ? `<div><a href="${music.link2}" target="_blank" class="text-sm text-blue-500 hover:underline break-all">관련 링크 2: ${music.link2}</a></div>` : ''}
+                </div>
+                <p class="text-xs text-gray-400 mt-3 text-right">게시일: ${music.createdAt ? new Date(music.createdAt.seconds * 1000).toLocaleString() : '날짜 정보 없음'}</p>
+            `;
+            return div;
+        }
+
 
         // 로그인 처리 함수
         async function handleLogin() {
             const password = passwordInput.value;
-            const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode'; // reCAPTCHA 로드 안됐을때 테스트용
+            const recaptchaResponse = (typeof grecaptcha !== 'undefined') ? grecaptcha.getResponse() : 'test_mode';
 
             if (!password) {
                 messageDiv.textContent = "비밀번호를 입력해주세요.";
                 messageDiv.className = "mt-4 text-sm text-center text-red-500";
                 return;
             }
-
-            if (!recaptchaResponse) { // reCAPTCHA 응답이 없으면
+            if (!recaptchaResponse && typeof grecaptcha !== 'undefined') {
                 messageDiv.textContent = "reCAPTCHA를 완료해주세요.";
                 messageDiv.className = "mt-4 text-sm text-center text-red-500";
                 return;
@@ -164,13 +290,12 @@
 
             try {
                 await signInWithEmailAndPassword(auth, FIXED_EMAIL, password);
-                // 성공 메시지는 onAuthStateChanged 에서 UI 업데이트로 처리됨
-                // passwordInput.value = ""; // 입력 필드 초기화는 성공 시 UI 업데이트 함수에서 해도 됨
+                passwordInput.value = "";
             } catch (error) {
                 console.error("로그인 실패:", error.code, error.message);
                 messageDiv.textContent = "로그인 실패: " + mapAuthError(error.code);
                 messageDiv.className = "mt-4 text-sm text-center text-red-600";
-                if (typeof grecaptcha !== 'undefined') { // 실패 시 reCAPTCHA 리셋
+                if (typeof grecaptcha !== 'undefined') {
                     grecaptcha.reset();
                 }
             } finally {
@@ -181,10 +306,9 @@
         }
 
         loginButton.addEventListener('click', handleLogin);
-
         passwordInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
-                event.preventDefault(); // 폼 자동 제출 방지 (혹시 모를 상황 대비)
+                event.preventDefault();
                 handleLogin();
             }
         });
@@ -192,15 +316,89 @@
         logoutButton.addEventListener('click', async () => {
             try {
                 await signOut(auth);
-                // 로그아웃 성공 시 UI는 onAuthStateChanged가 알아서 처리
             } catch (error) {
                 console.error("로그아웃 실패:", error);
-                // 필요하다면 사용자에게 알림
+                alert("로그아웃 중 오류가 발생했습니다.");
             }
         });
 
+        // 모달 관련 함수
+        function openModal() {
+            addMusicModal.classList.remove('hidden');
+            addMusicModal.classList.add('modal-active');
+            document.body.classList.add('modal-active'); // 스크롤 방지
+        }
+
+        function closeModal() {
+            addMusicForm.reset(); // 폼 초기화
+            addMusicMessage.textContent = ''; // 메시지 초기화
+            addMusicModal.classList.add('hidden');
+            addMusicModal.classList.remove('modal-active');
+            document.body.classList.remove('modal-active');
+        }
+
+        openAddMusicModalButton.addEventListener('click', openModal);
+        closeAddMusicModalButton.addEventListener('click', closeModal);
+        cancelAddMusicButton.addEventListener('click', closeModal);
+        // 모달 외부 클릭 시 닫기 (선택 사항)
+        addMusicModal.addEventListener('click', (event) => {
+            if (event.target === addMusicModal) { // modal-overlay 클릭 시
+                closeModal();
+            }
+        });
+
+
+        // 음악 추가 폼 제출 처리
+        addMusicForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            saveMusicButton.disabled = true;
+            saveMusicButton.textContent = "저장 중...";
+            addMusicMessage.textContent = "데이터를 저장하고 있습니다...";
+            addMusicMessage.className = "mt-4 text-sm text-center text-gray-500";
+
+            const title = addMusicForm.musicTitle.value.trim();
+            const url = addMusicForm.musicUrl.value.trim();
+            const description = addMusicForm.musicDescription.value.trim();
+            const link1 = addMusicForm.musicLink1.value.trim();
+            const link2 = addMusicForm.musicLink2.value.trim();
+
+            if (!title || !url) {
+                addMusicMessage.textContent = "곡 제목과 곡 URL은 필수입니다.";
+                addMusicMessage.className = "mt-4 text-sm text-center text-red-500";
+                saveMusicButton.disabled = false;
+                saveMusicButton.textContent = "저장";
+                return;
+            }
+
+            try {
+                const docRef = await addDoc(collection(db, "musicbox"), {
+                    title: title,
+                    url: url,
+                    description: description,
+                    link1: link1,
+                    link2: link2,
+                    createdAt: serverTimestamp(), // 서버 시간 기준으로 저장
+                    userId: auth.currentUser ? auth.currentUser.uid : null // 사용자 ID (선택적)
+                });
+                console.log("문서 ID: ", docRef.id, " 로 저장됨");
+                addMusicMessage.textContent = "음악이 성공적으로 추가되었습니다!";
+                addMusicMessage.className = "mt-4 text-sm text-center text-green-500";
+                setTimeout(() => { // 잠시 후 모달 닫고 목록 새로고침
+                    closeModal();
+                    loadAndDisplayMusicData(); // 목록 즉시 갱신
+                }, 1500);
+            } catch (error) {
+                console.error("데이터 저장 실패: ", error);
+                addMusicMessage.textContent = "데이터 저장에 실패했습니다: " + error.message;
+                addMusicMessage.className = "mt-4 text-sm text-center text-red-500";
+            } finally {
+                saveMusicButton.disabled = false;
+                saveMusicButton.textContent = "저장";
+            }
+        });
+
+
         function mapAuthError(errorCode) {
-            // ... (이전과 동일한 에러 매핑 함수)
             switch (errorCode) {
                 case "auth/invalid-email": return "잘못된 이메일 형식입니다.";
                 case "auth/user-disabled": return "사용 중지된 계정입니다.";
@@ -208,7 +406,7 @@
                     return "비밀번호가 올바르지 않습니다.";
                 case "auth/too-many-requests": return "너무 많은 요청이 있었습니다. 잠시 후 다시 시도해주세요.";
                 case "auth/network-request-failed": return "네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.";
-                case "auth/captcha-check-failed": return "reCAPTCHA 인증에 실패했습니다."; // App Check 등과 연동 시
+                case "auth/captcha-check-failed": return "reCAPTCHA 인증에 실패했습니다.";
                 default: return "알 수 없는 오류가 발생했습니다. (" + errorCode + ")";
             }
         }
