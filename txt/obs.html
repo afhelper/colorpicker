@@ -6,8 +6,9 @@
   <title>OBS Gift Sequence Loop</title>
   <style>
     :root {
-      --duration: 150s;
-      --overlap: 10px;
+      --duration: 232.70s;
+      --image-overlap: -10px;
+      --scroll-speed: 100;
     }
 
     * {
@@ -38,6 +39,7 @@
 
     .loop-track {
       width: 100%;
+      visibility: hidden;
       animation: scroll-up var(--duration) linear infinite;
       transform: translate3d(0, 0, 0);
       will-change: transform;
@@ -55,7 +57,6 @@
       width: 100%;
       height: auto;
       flex: 0 0 auto;
-      margin-top: calc(var(--overlap) * -1);
       border: 0;
       user-select: none;
       pointer-events: none;
@@ -63,8 +64,8 @@
       image-rendering: auto;
     }
 
-    .sequence:first-child img:first-child {
-      margin-top: 0;
+    .sequence img + img {
+      margin-top: var(--image-overlap);
     }
 
     @keyframes scroll-up {
@@ -79,28 +80,95 @@
 </head>
 <body>
   <main class="loop-window" aria-label="OBS 텍스트 이미지 무한 스크롤">
-    <div class="loop-track">
-      <div class="sequence">
-        <img src="text_image_001.png" alt="">
-        <img src="text_image_002.png" alt="">
-        <img src="text_image_003.png" alt="">
-        <img src="text_image_004.png" alt="">
-        <img src="text_image_005.png" alt="">
-        <img src="text_image_006.png" alt="">
-        <img src="text_image_007.png" alt="">
-        <img src="text_image_008.png" alt="">
-      </div>
-      <div class="sequence" aria-hidden="true">
-        <img src="text_image_001.png" alt="">
-        <img src="text_image_002.png" alt="">
-        <img src="text_image_003.png" alt="">
-        <img src="text_image_004.png" alt="">
-        <img src="text_image_005.png" alt="">
-        <img src="text_image_006.png" alt="">
-        <img src="text_image_007.png" alt="">
-        <img src="text_image_008.png" alt="">
-      </div>
+    <div class="loop-track" id="loopTrack">
     </div>
   </main>
+  <script>
+    const IMAGE_PREFIX = "text_image_";
+    const IMAGE_EXTENSION = ".png";
+    const MAX_INDEX = 9999;
+    const MAX_CONSECUTIVE_MISSES = 24;
+
+    const loopTrack = document.getElementById("loopTrack");
+    const scrollSpeed = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--scroll-speed")
+    );
+
+    function imagePath(index) {
+      return `${IMAGE_PREFIX}${String(index).padStart(3, "0")}${IMAGE_EXTENSION}`;
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.alt = "";
+        img.decoding = "async";
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    async function findImages() {
+      const images = [];
+      let misses = 0;
+
+      for (let index = 1; index <= MAX_INDEX && misses < MAX_CONSECUTIVE_MISSES; index += 1) {
+        const img = await loadImage(imagePath(index));
+
+        if (img) {
+          images.push(img);
+          misses = 0;
+        } else {
+          misses += 1;
+        }
+      }
+
+      return images;
+    }
+
+    function createSequence(images, isClone = false) {
+      const sequence = document.createElement("div");
+      sequence.className = "sequence";
+
+      if (isClone) {
+        sequence.setAttribute("aria-hidden", "true");
+      }
+
+      for (const image of images) {
+        const img = image.cloneNode();
+        sequence.appendChild(img);
+      }
+
+      return sequence;
+    }
+
+    function updateDuration() {
+      const firstSequence = loopTrack.querySelector(".sequence");
+
+      if (!firstSequence || !scrollSpeed) {
+        return;
+      }
+
+      const duration = firstSequence.getBoundingClientRect().height / scrollSpeed;
+      document.documentElement.style.setProperty("--duration", `${duration.toFixed(2)}s`);
+    }
+
+    async function boot() {
+      const images = await findImages();
+
+      if (images.length === 0) {
+        return;
+      }
+
+      loopTrack.appendChild(createSequence(images));
+      loopTrack.appendChild(createSequence(images, true));
+      updateDuration();
+      loopTrack.style.visibility = "visible";
+    }
+
+    window.addEventListener("resize", updateDuration);
+    boot();
+  </script>
 </body>
 </html>
