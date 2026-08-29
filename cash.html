@@ -79,8 +79,9 @@
             ctx.fillStyle = 'black';
             ctx.fillText(`${formattedDonation} 캐시`, canvas.width / 2, canvas.height - 7);
 
-            // 캐시 숫자 텍스트 (상단 40px 위치, 크기 40px, 두 겹 테두리 추가)
-            ctx.font = 'bold 40px Arial';
+            // 캐시 숫자 텍스트 (상단 40px 위치, 두 겹 테두리 추가)
+            const topFontSize = getFittingFontSize(formattedDonation, 40, 24, canvas.width - 16);
+            ctx.font = `bold ${topFontSize}px Arial`;
 
             // 바깥쪽 검정색 테두리
             ctx.strokeStyle = 'black';
@@ -100,6 +101,22 @@
         function activateDownload() {
             downloadLink.style.display = 'inline-block';
             downloadLink.href = canvas.toDataURL('image/png');
+        }
+
+        function getFittingFontSize(text, startSize, minSize, maxWidth) {
+            let fontSize = startSize;
+
+            while (fontSize > minSize) {
+                ctx.font = `bold ${fontSize}px Arial`;
+
+                if (ctx.measureText(text).width <= maxWidth) {
+                    break;
+                }
+
+                fontSize -= 1;
+            }
+
+            return fontSize;
         }
     </script>
 </body>
